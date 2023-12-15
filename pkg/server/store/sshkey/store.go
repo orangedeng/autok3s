@@ -18,7 +18,7 @@ type Store struct {
 }
 
 func (s *Store) Create(_ *types.APIRequest, _ *types.APISchema, data types.APIObject) (types.APIObject, error) {
-	rtn := common.SSHKey{}
+	rtn := common.SshKey{}
 	if err := convert.ToObj(data.Object, &rtn); err != nil {
 		return types.APIObject{}, err
 	}

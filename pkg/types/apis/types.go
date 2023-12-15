@@ -18,7 +18,7 @@ type Provider struct {
 type Cluster struct {
 	types.Metadata `json:",inline" mapstructure:",squash"`
 	types.SSH      `json:",inline"`
-	types.Status   `json:"status"`
+	types.Status   `json:",inline"`
 	Options        interface{} `json:"options,omitempty"`
 	IsHAMode       bool        `json:"is-ha-mode"`
 	DataStoreType  string      `json:"datastore-type,omitempty"`

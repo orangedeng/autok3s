@@ -25,7 +25,7 @@ var (
 		&Setting{},
 		&Explorer{},
 		&Package{},
-		&SSHKey{},
+		&SshKey{},
 		&Addon{},
 	}
 )

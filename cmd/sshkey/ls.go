@@ -28,7 +28,7 @@ func init() {
 
 func list(cmd *cobra.Command, args []string) error {
 	var err error
-	var list []*common.SSHKey
+	var list []*common.SshKey
 	if len(args) == 1 {
 		list, err = common.DefaultDB.ListSSHKey(&args[0])
 	} else {

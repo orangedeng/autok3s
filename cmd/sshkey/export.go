@@ -79,7 +79,7 @@ func pathsNotExists(basePath string, paths ...string) error {
 	return nil
 }
 
-func exportKeyFiles(path string, target *common.SSHKey) error {
+func exportKeyFiles(path string, target *common.SshKey) error {
 	dataMap := map[string]string{
 		pkgsshkey.PrivateKeyFilename:  target.SSHKey,
 		pkgsshkey.PublicKeyFilename:   target.SSHPublicKey,

@@ -25,9 +25,9 @@ import (
 const (
 	actionJoin               = "join"
 	linkNodes                = "nodes"
-	actionEnableExplorer     = "enable-explorer"
-	actionDisableExplorer    = "disable-explorer"
-	actionDownloadKubeconfig = "download-kubeconfig"
+	actionEnableExplorer     = "enableExplorer"
+	actionDisableExplorer    = "disableExplorer"
+	actionDownloadKubeconfig = "downloadKubeconfig"
 	actionUpgrade            = "upgrade"
 )
 

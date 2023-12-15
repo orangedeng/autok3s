@@ -151,7 +151,7 @@ func validateCreateArgs(cmd *cobra.Command, args []string) (err error) {
 }
 
 func create(cmd *cobra.Command, args []string) error {
-	toSave := common.SSHKey{
+	toSave := common.SshKey{
 		Name:          args[0],
 		SSHPassphrase: sshKeyFlags.Passphrase,
 		Bits:          sshKeyFlags.Bits,

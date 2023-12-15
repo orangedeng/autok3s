@@ -17,10 +17,10 @@ import (
 
 var (
 	ActionHandlers = map[string]http.Handler{
-		"import":                http.HandlerFunc(importHandler),
-		"update-install-script": http.HandlerFunc(updateInstallScript),
-		"cancel":                http.HandlerFunc(cancelHandler),
-		"download":              http.HandlerFunc(downloadHandler),
+		"import":              http.HandlerFunc(importHandler),
+		"updateInstallScript": http.HandlerFunc(updateInstallScript),
+		"cancel":              http.HandlerFunc(cancelHandler),
+		"download":            http.HandlerFunc(downloadHandler),
 	}
 	LinkHandlers = map[string]http.Handler{
 		"export": http.HandlerFunc(exportHandler),
@@ -54,7 +54,7 @@ func Format(_ *types.APIRequest, resource *types.RawResource) {
 
 func CollectionFormat(request *types.APIRequest, collection *types.GenericCollection) {
 	collection.AddAction(request, "import")
-	collection.AddAction(request, "update-install-script")
+	collection.AddAction(request, "updateInstallScript")
 }
 
 func importHandler(_ http.ResponseWriter, r *http.Request) {

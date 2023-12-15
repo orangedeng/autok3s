@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type SSHKey struct {
+type SshKey struct {
 	Name        string `json:"name" gorm:"primaryKey;not null" wrangler:"required"`
 	GenerateKey bool   `json:"generate-key,omitempty" gorm:"-:all" wrangler:"writeOnly,noupdate"`
 	HasPassword bool   `json:"has-password" wrangler:"nocreate,noupdate"`
@@ -19,11 +19,11 @@ type SSHKey struct {
 	SSHPublicKey string `json:"ssh-key-public,omitempty" yaml:"ssh-key-public,omitempty" wrangler:"nullable"`
 }
 
-func (s SSHKey) GetID() string {
+func (s SshKey) GetID() string {
 	return s.Name
 }
 
-func (s *Store) SaveSSHKey(sshkey SSHKey) error {
+func (s *Store) SaveSSHKey(sshkey SshKey) error {
 	exists, _ := s.SSHKeyExists(sshkey.Name)
 	if exists {
 		// update sshkey
@@ -35,14 +35,14 @@ func (s *Store) SaveSSHKey(sshkey SSHKey) error {
 	return result.Error
 }
 
-func (s *Store) ListSSHKey(name *string) ([]*SSHKey, error) {
-	var rtn []*SSHKey
-	var singleRtn SSHKey
+func (s *Store) ListSSHKey(name *string) ([]*SshKey, error) {
+	var rtn []*SshKey
+	var singleRtn SshKey
 	var rtnDB *gorm.DB
 	if name == nil {
 		rtnDB = s.DB.Find(&rtn)
 	} else {
-		rtnDB = s.DB.Model(&SSHKey{}).First(&singleRtn, "name = ?", *name)
+		rtnDB = s.DB.Model(&SshKey{}).First(&singleRtn, "name = ?", *name)
 	}
 	if rtnDB.Error != nil {
 		return nil, rtnDB.Error

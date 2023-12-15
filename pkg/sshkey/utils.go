@@ -32,7 +32,7 @@ func NeedPassword(keypath string) (bool, error) {
 	return NeedPasswordRaw(content)
 }
 
-func CreateSSHKey(key *common.SSHKey) error {
+func CreateSSHKey(key *common.SshKey) error {
 	var err error
 	var publicKey ssh.PublicKey
 	var privateKey ssh.Signer
@@ -69,7 +69,7 @@ func CreateSSHKey(key *common.SSHKey) error {
 	return common.DefaultDB.SaveSSHKey(*key)
 }
 
-func GenerateSSHKey(key *common.SSHKey) error {
+func GenerateSSHKey(key *common.SshKey) error {
 	privateKey, err := rsa.GenerateKey(rand.Reader, key.Bits)
 	if err != nil {
 		return err

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/cnrancher/autok3s/pkg/server/proxy"
+	"github.com/cnrancher/autok3s/pkg/server/schema"
 	"github.com/cnrancher/autok3s/pkg/server/ui"
 
 	"github.com/gorilla/mux"
@@ -19,18 +20,8 @@ import (
 // Start starts daemon.
 func Start() http.Handler {
 	s := server.DefaultAPIServer()
-	initMutual(s.Schemas)
-	initProvider(s.Schemas)
-	initCluster(s.Schemas)
-	initCredential(s.Schemas)
-	initKubeconfig(s.Schemas)
-	initLogs(s.Schemas)
-	initTemplates(s.Schemas)
-	initExplorer(s.Schemas)
-	initSettings(s.Schemas)
-	initPackage(s.Schemas)
-	initSSHKey(s.Schemas)
-	initAddon(s.Schemas)
+
+	s.Schemas = schema.InitSchema(s.Schemas)
 
 	apiroot.Register(s.Schemas, []string{"v1"})
 	router := mux.NewRouter()
