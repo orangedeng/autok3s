@@ -1,4 +1,4 @@
-package cmd
+package functional
 
 import (
 	"github.com/cnrancher/autok3s/cmd/common"

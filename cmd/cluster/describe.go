@@ -1,4 +1,4 @@
-package cmd
+package cluster
 
 import (
 	"fmt"
@@ -13,25 +13,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	describeCmd = &cobra.Command{
+// DescribeCommand returns the specified cluster details.
+func describeCommand() *cobra.Command {
+	describeCmd := &cobra.Command{
 		Use:     "describe",
 		Short:   "Show details of a specific resource",
 		Example: `  autok3s describe -n <cluster-name> -p <provider>`,
 	}
-	desProvider = ""
-	name        = ""
-)
-
-func init() {
-	describeCmd.Flags().StringVarP(&desProvider, "provider", "p", desProvider, "Provider is a module which provides an interface for managing cloud resources")
-	describeCmd.Flags().StringVarP(&name, "name", "n", name, "cluster name")
-}
-
-// DescribeCommand returns the specified cluster details.
-func DescribeCommand() *cobra.Command {
+	describeCmd.Flags().StringVarP(&providerName, "provider", "p", providerName, "Provider is a module which provides an interface for managing cloud resources")
+	describeCmd.Flags().StringVarP(&clusterName, "clusterName", "n", clusterName, "cluster name")
 	describeCmd.PreRunE = func(cmd *cobra.Command, args []string) error {
-		if name == "" {
+		if clusterName == "" {
 			logrus.Fatalln("`-n` or `--name` must set to specify a cluster, i.e. autok3s describe -n <cluster-name>")
 		}
 		return nil
@@ -48,7 +40,7 @@ func describeCluster() {
 	out := new(tabwriter.Writer)
 	out.Init(os.Stdout, 0, 8, 0, '\t', 0)
 
-	result, err := common.DefaultDB.FindCluster(name, desProvider)
+	result, err := common.DefaultDB.FindCluster(clusterName, providerName)
 	if err != nil {
 		logrus.Fatalf("find cluster error %v", err)
 	}
@@ -70,11 +62,11 @@ func describeCluster() {
 			continue
 		}
 		if !isExist {
-			allErr = append(allErr, fmt.Sprintf("cluster %s is not exist", name))
+			allErr = append(allErr, fmt.Sprintf("cluster %s is not exist", clusterName))
 			continue
 		}
 		info := provider.DescribeCluster(kubeCfg)
-		_, _ = fmt.Fprintf(out, "Name: %s\n", name)
+		_, _ = fmt.Fprintf(out, "Name: %s\n", clusterName)
 		_, _ = fmt.Fprintf(out, "Provider: %s\n", info.Provider)
 		_, _ = fmt.Fprintf(out, "Region: %s\n", info.Region)
 		_, _ = fmt.Fprintf(out, "Zone: %s\n", info.Zone)

@@ -1,10 +1,9 @@
-package cmd
+package functional
 
 import (
 	"fmt"
-	"runtime"
 
-	"github.com/cnrancher/autok3s/pkg/types"
+	"github.com/cnrancher/autok3s/pkg/version"
 
 	"github.com/spf13/cobra"
 )
@@ -23,17 +22,9 @@ func init() {
 	versionCmd.Flags().BoolVarP(&short, "short", "s", short, "Print just the version number")
 }
 
-// VersionCommand returns version information.
-func VersionCommand(gitVersion, gitCommit, gitTreeState, buildDate string) *cobra.Command {
-	version := types.VersionInfo{
-		GitVersion:   gitVersion,
-		GitCommit:    gitCommit,
-		GitTreeState: gitTreeState,
-		BuildDate:    buildDate,
-		GoVersion:    runtime.Version(),
-		Compiler:     runtime.Compiler,
-		Platform:     fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
-	}
+// versionCommand returns version information.
+func versionCommand() *cobra.Command {
+	version := version.GetInfo()
 
 	versionCmd.Run = func(cmd *cobra.Command, args []string) {
 		if short {

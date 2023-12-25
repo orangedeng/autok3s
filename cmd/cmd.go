@@ -7,6 +7,11 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/cnrancher/autok3s/cmd/addon"
+	"github.com/cnrancher/autok3s/cmd/airgap"
+	"github.com/cnrancher/autok3s/cmd/cluster"
+	"github.com/cnrancher/autok3s/cmd/functional"
+	"github.com/cnrancher/autok3s/cmd/sshkey"
 	"github.com/cnrancher/autok3s/pkg/common"
 
 	// import custom provider
@@ -60,6 +65,14 @@ func Command() *cobra.Command {
 			os.Exit(1)
 		}
 	}
+	// functional
+	cmds := append(functional.Commands,
+		cluster.Command(),
+		airgap.Command(),
+		addon.Command(),
+		sshkey.Command(),
+	)
+	cmd.AddCommand(cmds...)
 	return cmd
 }
 

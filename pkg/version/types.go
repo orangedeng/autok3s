@@ -1,4 +1,4 @@
-package types
+package version
 
 import (
 	"encoding/json"
@@ -6,9 +6,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// VersionInfo contains version information.
+// Info contains version information.
 // Borrowed from https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/apimachinery/pkg/version/types.go.
-type VersionInfo struct {
+type Info struct {
 	GitVersion   string `json:"gitVersion"`
 	GitCommit    string `json:"gitCommit"`
 	GitTreeState string `json:"gitTreeState"`
@@ -19,7 +19,7 @@ type VersionInfo struct {
 }
 
 // String returns info as a full version string.
-func (versionInfo VersionInfo) String() string {
+func (versionInfo Info) String() string {
 	bytes, err := json.Marshal(versionInfo)
 	if err != nil {
 		logrus.Fatalln(err)
@@ -28,6 +28,6 @@ func (versionInfo VersionInfo) String() string {
 }
 
 // Short returns info as a human-friendly version string.
-func (versionInfo VersionInfo) Short() string {
+func (versionInfo Info) Short() string {
 	return versionInfo.GitVersion
 }

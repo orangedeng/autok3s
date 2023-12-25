@@ -1,4 +1,4 @@
-package cmd
+package functional
 
 import (
 	"context"
@@ -28,8 +28,8 @@ func init() {
 	serveCmd.Flags().StringVar(&bindAddress, "bind-address", bindAddress, "HTTP/HTTPS bind address")
 }
 
-// ServeCommand serve command.
-func ServeCommand() *cobra.Command {
+// serveCommand serve command.
+func serveCommand() *cobra.Command {
 	serveCmd.Run = func(cmd *cobra.Command, args []string) {
 		common.IsCLI = false
 		router := server.Start()
@@ -59,4 +59,11 @@ func ServeCommand() *cobra.Command {
 	}
 
 	return serveCmd
+}
+
+func IsServe(cmd *cobra.Command) bool {
+	if cmd == nil {
+		return false
+	}
+	return cmd.Use == serveCmd.Use
 }

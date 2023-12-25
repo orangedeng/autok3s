@@ -1,4 +1,4 @@
-package cmd
+package functional
 
 import (
 	"path/filepath"
@@ -27,8 +27,8 @@ func init() {
 	dashboardCmd.Flags().IntVarP(&dashboardPort, "port", "", dashboardPort, "Set http port for helm-dashboard")
 }
 
-// DashboardCommand will start a helm-dashboard server for specified K3s cluster
-func DashboardCommand() *cobra.Command {
+// dashboardCommand will start a helm-dashboard server for specified K3s cluster
+func dashboardCommand() *cobra.Command {
 	dashboardCmd.PreRunE = func(cmd *cobra.Command, args []string) error {
 		cfg, err := clientcmd.LoadFromFile(filepath.Join(common.CfgPath, common.KubeCfgFile))
 		if err != nil {

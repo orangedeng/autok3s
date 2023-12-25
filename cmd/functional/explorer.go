@@ -1,4 +1,4 @@
-package cmd
+package functional
 
 import (
 	"github.com/cnrancher/autok3s/pkg/common"
@@ -23,8 +23,8 @@ func init() {
 	explorerCmd.Flags().IntVarP(&explorerPort, "port", "", explorerPort, "Set http port for kube-explorer")
 }
 
-// ExplorerCommand will start a kube-explorer server for specified K3s cluster
-func ExplorerCommand() *cobra.Command {
+// explorerCommand will start a kube-explorer server for specified K3s cluster
+func explorerCommand() *cobra.Command {
 	explorerCmd.PreRunE = func(cmd *cobra.Command, args []string) error {
 		if clusterID == "" {
 			logrus.Fatalln("required flag(s) \"--context\" not set")

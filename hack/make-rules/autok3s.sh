@@ -70,9 +70,9 @@ function build() {
   local K3S_TAG=`curl --silent --retry 3 "https://update.k3s.io/v1-release/channels/stable" | egrep -o '/v[^ ]+"' | sed -E 's/\/|\"//g' | sed -E 's/\+/\-/'`
 
   local version_flags="
-    -X main.gitVersion=${GIT_VERSION}
-    -X main.gitCommit=${GIT_COMMIT}
-    -X main.buildDate=${BUILD_DATE}
+    -X github.com/cnrancher/autok3s/pkg/version.gitVersion=${GIT_VERSION}
+    -X github.com/cnrancher/autok3s/pkg/version.gitCommit=${GIT_COMMIT}
+    -X github.com/cnrancher/autok3s/pkg/version.buildDate=${BUILD_DATE}
     -X k8s.io/client-go/pkg/version.gitVersion=${GIT_VERSION}
     -X k8s.io/client-go/pkg/version.gitCommit=${GIT_COMMIT}
     -X k8s.io/client-go/pkg/version.gitTreeState=${GIT_TREE_STATE}

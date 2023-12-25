@@ -1,4 +1,4 @@
-package cmd
+package functional
 
 import (
 	"strconv"
@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	telemetryCommand = &cobra.Command{
+	telemetryCmd = &cobra.Command{
 		Use:   "telemetry",
 		Short: "Telemetry status for autok3s",
 	}
@@ -19,18 +19,18 @@ var (
 )
 
 func init() {
-	telemetryCommand.Flags().StringVar(&enable, "set", "", "to set telemetry status, true of false")
+	telemetryCmd.Flags().StringVar(&enable, "set", "", "to set telemetry status, true of false")
 }
 
-func TelemetryCommand() *cobra.Command {
-	telemetryCommand.PreRunE = func(cmd *cobra.Command, args []string) error {
+func telemetryCommand() *cobra.Command {
+	telemetryCmd.PreRunE = func(cmd *cobra.Command, args []string) error {
 		_, err := getValidatedEnable(cmd)
 		if err != nil {
 			return errors.Wrap(err, "invalid set flag")
 		}
 		return nil
 	}
-	telemetryCommand.Run = func(cmd *cobra.Command, args []string) {
+	telemetryCmd.Run = func(cmd *cobra.Command, args []string) {
 		rtn, _ := getValidatedEnable(cmd)
 		if rtn == nil {
 			getCurrentStatus(cmd)
@@ -41,7 +41,7 @@ func TelemetryCommand() *cobra.Command {
 			cmd.Printf("telemetry status set to %v\n", *rtn)
 		}
 	}
-	return telemetryCommand
+	return telemetryCmd
 }
 
 func getValidatedEnable(cmd *cobra.Command) (*bool, error) {

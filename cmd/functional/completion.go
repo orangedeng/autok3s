@@ -1,4 +1,4 @@
-package cmd
+package functional
 
 import (
 	"os"
@@ -39,8 +39,8 @@ const exampleStr = `
   $ autok3s completion fish > ~/.config/fish/completions/autok3s.fish
 `
 
-// CompletionCommand used for command completion.
-func CompletionCommand() *cobra.Command {
+// completionCommand used for command completion.
+func completionCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                   "completion [bash|zsh|fish|powershell]",
 		Short:                 "Generate completion script",

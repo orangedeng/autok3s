@@ -58,6 +58,11 @@ func Start() http.Handler {
 	router.PathPrefix("/proxy/explorer/{name}").Handler(proxy.NewExplorerProxy())
 	router.PathPrefix("/meta/proxy").Handler(proxy.NewProxy("/proxy/"))
 	router.PathPrefix("/k8s/proxy").Handler(proxy.NewK8sProxy())
+	RegisterAPI(router, s)
+	return router
+}
+
+func RegisterAPI(router *mux.Router, s *server.Server) {
 	router.Path("/{prefix}/{type}").Queries("action", "{action}").Handler(s)
 	router.Path("/{prefix}/{type}").Handler(s)
 	router.Path("/{prefix}/{type}/{name}").Queries("link", "{link}").Handler(s)
@@ -72,6 +77,4 @@ func Start() http.Handler {
 			URLPrefix: "v1",
 		})
 	})
-
-	return router
 }

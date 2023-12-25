@@ -1,4 +1,4 @@
-package cmd
+package cluster
 
 import (
 	"encoding/json"
@@ -13,21 +13,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	listCmd = &cobra.Command{
+// ListCommand returns clusters as list.
+func listCommand() *cobra.Command {
+	listCmd := &cobra.Command{
 		Use:     "list",
 		Short:   "Display all K3s clusters",
 		Example: `  autok3s list`,
 	}
-	jsonOut = false
-)
-
-func init() {
 	listCmd.Flags().BoolVarP(&jsonOut, "json", "j", jsonOut, "json output")
-}
-
-// ListCommand returns clusters as list.
-func ListCommand() *cobra.Command {
 	listCmd.Run = func(cmd *cobra.Command, args []string) {
 		listCluster()
 	}

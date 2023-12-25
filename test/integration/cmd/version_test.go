@@ -6,9 +6,8 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/cnrancher/autok3s/pkg/types"
-
 	exec "github.com/alexellis/go-execute/pkg/v1"
+	"github.com/cnrancher/autok3s/pkg/version"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -31,7 +30,7 @@ var _ = Describe("Cmd Version Test", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(res.ExitCode).To(Equal(0))
 
-			version := &types.VersionInfo{}
+			version := &version.Info{}
 			err = json.Unmarshal([]byte(res.Stdout[8:]), version)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(version.GitVersion).NotTo(BeEmpty())

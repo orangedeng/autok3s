@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/cnrancher/autok3s/cmd"
+	"github.com/cnrancher/autok3s/cmd/functional"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -20,10 +21,8 @@ func TestCmd(t *testing.T) {
 var _ = BeforeSuite(func() {
 	rootCmd = cmd.Command()
 	rootCmd.AddCommand(
-		cmd.CompletionCommand(),
-		cmd.VersionCommand("", "", "", ""),
-		cmd.ListCommand(),
-		cmd.CreateCommand())
+		functional.Commands...,
+	)
 
 	Expect(rootCmd).NotTo(BeNil())
 })
