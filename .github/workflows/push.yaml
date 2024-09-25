@@ -22,7 +22,7 @@ jobs:
         uses: docker://aevea/release-notary:0.9.2
         with:
           entrypoint: /bin/sh
-          args: hack/make-rules/release-note.sh ./note.txt;
+          args: hack/make-rules/release-note.sh ./note.txt
       - name: ls bin
         run: |
           ls -al
