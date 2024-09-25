@@ -73,3 +73,5 @@ jobs:
           files: dist/autok3s_*
           body_path: ./note.txt
           draft: true
+    permissions:
+      contents: write
