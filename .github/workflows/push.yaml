@@ -25,7 +25,6 @@ jobs:
           args: hack/make-rules/release-note.sh ./note.txt;
       - name: ls bin
         run: |
-          ls -al bin
           ls -al
       - name: Login to Dockerhub
         uses: docker/login-action@v3
