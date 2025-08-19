@@ -7,7 +7,7 @@
 #    DAPPER_VERSION   -  The dapper version for running, default is v0.5.8.
 
 function autok3s::dapper::install() {
-  local version=${DAPPER_VERSION:-"v0.5.8"}
+  local version=${DAPPER_VERSION:-"v0.6.0"}
   curl -fL "https://github.com/rancher/dapper/releases/download/${version}/dapper-$(uname -s)-$(uname -m)" -o ./.dapper
   chmod +x ./.dapper
 }
