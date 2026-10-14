@@ -79,10 +79,6 @@ func initCfg() {
 
 	common.ExplorerWatchers = map[string]context.CancelFunc{}
 	common.FileManager = &common.ConfigFileManager{}
-
-	if err := common.SetupNewInstall(); err != nil {
-		logrus.Fatalln(err)
-	}
 }
 
 func printASCII() {
