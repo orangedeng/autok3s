@@ -128,7 +128,7 @@ function package() {
   [[ "${1:-}" != "only" ]] && build
   autok3s::log::info "packaging autok3s..."
 
-  REPO=${REPO:-cnrancher}
+  REPO=${REPO:-orstar}
   TAG=${TAG:-${GIT_VERSION}}
 
   local os="$(go env GOOS)"
