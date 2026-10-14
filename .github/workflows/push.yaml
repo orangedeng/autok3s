@@ -49,7 +49,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ vars.REPO || 'cnrancher' }}/${{ vars.IMAGE || 'autok3s' }}
+          images: ${{ vars.REPO || 'orstar' }}/${{ vars.IMAGE || 'autok3s' }}
           tags: |
             type=ref,event=tag
             type=ref,event=branch

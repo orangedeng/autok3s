@@ -5,6 +5,17 @@ on:
       - opened
       - reopened
       - synchronize
+    # Skip CI entirely when the PR does not touch Go build/code related files,
+    # to save CI time (e.g. docs-only or asset-only changes).
+    paths:
+      - '**.go'
+      - 'go.mod'
+      - 'go.sum'
+      - 'go.work*'
+      - 'Makefile'
+      - 'hack/**'
+      - '.golangci*'
+      - '.github/workflows/pr.yaml'
 jobs:
   pr-build:
     runs-on: ubuntu-latest
