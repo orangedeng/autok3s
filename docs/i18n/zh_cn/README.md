@@ -1,3 +1,6 @@
+> [!NOTE]
+> **Fork 状态说明**：上游仓库 [cnrancher/autok3s](https://github.com/cnrancher/autok3s) 已不再活跃维护。本 fork 用于在上游项目基础上进行简单的 feature 增加与 bug 修复，并非上游项目的官方延续，相关改动以尽力而为（best-effort）的方式维护。
+
 ## 什么是 AutoK3s
 
 [K3s](https://github.com/k3s-io/k3s) 是经过完全认证的 Kubernetes 产品，在某些情况下可以替代完整的 K8s。

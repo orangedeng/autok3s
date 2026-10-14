@@ -10,6 +10,9 @@
 
 <hr />
 
+> [!NOTE]
+> **Fork Status**: The upstream repository [cnrancher/autok3s](https://github.com/cnrancher/autok3s) is no longer actively maintained. This fork is used to carry lightweight feature additions and bug fixes on top of the original project. It is not an official continuation of the upstream project, and changes here are maintained on a best-effort basis.
+
 ## What is AutoK3s
 
 English / [简体中文](docs/i18n/zh_cn/README.md)
