@@ -1,17 +1,4 @@
-<div align="center">
-  <h1>AutoK3s</h1>
-  <p>
-    <a href="https://drone-pandaria.cnrancher.com/cnrancher/pandaria"><img alt="Build Status" src="http://drone-pandaria.cnrancher.com/api/badges/cnrancher/autok3s/status.svg"></a>
-    <a href="https://goreportcard.com/report/github.com/cnrancher/autok3s"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/cnrancher/autok3s"></a>
-    <a href="https://github.com/cnrancher/autok3s/releases"><img alt="GitHub release (latest by date)" src="https://img.shields.io/github/v/release/cnrancher/autok3s?color=default&label=release&logo=github"></a>
-    <a href="https://github.com/cnrancher/autok3s/releases"><img alt="GitHub release (latest by date including pre-releases)" src="https://img.shields.io/github/v/release/cnrancher/autok3s?include_prereleases&label=pre-release&logo=github"></a>
-  </p>
-</div>
-
-<hr />
-
-> [!NOTE]
-> **Fork Status**: The upstream repository [cnrancher/autok3s](https://github.com/cnrancher/autok3s) is no longer actively maintained. This fork is used to carry lightweight feature additions and bug fixes on top of the original project. It is not an official continuation of the upstream project, and changes here are maintained on a best-effort basis.
+# AutoK3s
 
 ## What is AutoK3s
 
@@ -29,7 +16,6 @@ AutoK3s is a lightweight tool for simplifying the cluster management of K3s, it 
 - [Demo Video](#demo-video)
 - [Developers' Guide](#developers-guide)
 - [Source Code](#source-code)
-- [License](#license)
 
 <!-- /toc -->
 
@@ -117,26 +103,4 @@ Install `dapper` please follow the [dapper](https://github.com/rancher/dapper) p
 
 ## Source Code
 
-AutoK3s is 100% open-source software. The project source code is spread across a number of repos:
-
-- https://github.com/cnrancher/autok3s
-- https://github.com/cnrancher/autok3s-ui
-- https://github.com/cnrancher/kube-explorer
-
-Contributed by SUSE(Rancher E&I) Team
-
-# License
-
-Copyright (c) 2024 [SUSE](https://www.suse.com/)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-[http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+AutoK3s is 100% open-source software.
