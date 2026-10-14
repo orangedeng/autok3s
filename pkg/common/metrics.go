@@ -3,10 +3,10 @@ package common
 import (
 	"strconv"
 
-	"github.com/cnrancher/autok3s/pkg/metrics"
-	"github.com/cnrancher/autok3s/pkg/settings"
-	"github.com/cnrancher/autok3s/pkg/types"
-	"github.com/cnrancher/autok3s/pkg/utils"
+	"github.com/orangedeng/autok3s/pkg/metrics"
+	"github.com/orangedeng/autok3s/pkg/settings"
+	"github.com/orangedeng/autok3s/pkg/types"
+	"github.com/orangedeng/autok3s/pkg/utils"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"

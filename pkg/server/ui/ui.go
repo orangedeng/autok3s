@@ -54,7 +54,7 @@ func ServeNotFound(next http.Handler) http.Handler {
 
 func ServeJavascript(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		// This is used to enforce application/javascript MIME on Windows (https://github.com/cnrancher/autok3s/issues/426)
+		// This is used to enforce application/javascript MIME on Windows (https://github.com/orangedeng/autok3s/issues/426)
 		// refer to: https://github.com/golang/go/issues/32350
 		if strings.HasSuffix(r.URL.Path, ".js") {
 			rw.Header().Set("Content-Type", "application/javascript")

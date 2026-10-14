@@ -3,8 +3,8 @@ package airgap
 import (
 	"fmt"
 
-	pkgairgap "github.com/cnrancher/autok3s/pkg/airgap"
-	"github.com/cnrancher/autok3s/pkg/common"
+	pkgairgap "github.com/orangedeng/autok3s/pkg/airgap"
+	"github.com/orangedeng/autok3s/pkg/common"
 
 	"github.com/AlecAivazis/survey/v2"
 	"k8s.io/apimachinery/pkg/util/validation"

@@ -3,7 +3,7 @@ package common
 import (
 	"fmt"
 
-	"github.com/cnrancher/autok3s/pkg/types"
+	"github.com/orangedeng/autok3s/pkg/types"
 
 	"gorm.io/gorm"
 )

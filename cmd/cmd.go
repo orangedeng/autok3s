@@ -7,15 +7,15 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/cnrancher/autok3s/pkg/common"
+	"github.com/orangedeng/autok3s/pkg/common"
 
 	// import custom provider
-	_ "github.com/cnrancher/autok3s/pkg/providers/alibaba"
-	_ "github.com/cnrancher/autok3s/pkg/providers/aws"
-	_ "github.com/cnrancher/autok3s/pkg/providers/google"
-	_ "github.com/cnrancher/autok3s/pkg/providers/k3d"
-	_ "github.com/cnrancher/autok3s/pkg/providers/native"
-	_ "github.com/cnrancher/autok3s/pkg/providers/tencent"
+	_ "github.com/orangedeng/autok3s/pkg/providers/alibaba"
+	_ "github.com/orangedeng/autok3s/pkg/providers/aws"
+	_ "github.com/orangedeng/autok3s/pkg/providers/google"
+	_ "github.com/orangedeng/autok3s/pkg/providers/k3d"
+	_ "github.com/orangedeng/autok3s/pkg/providers/native"
+	_ "github.com/orangedeng/autok3s/pkg/providers/tencent"
 
 	"github.com/morikuni/aec"
 	"github.com/sirupsen/logrus"

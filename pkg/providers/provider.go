@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/cnrancher/autok3s/pkg/types"
-	"github.com/cnrancher/autok3s/pkg/types/apis"
+	"github.com/orangedeng/autok3s/pkg/types"
+	"github.com/orangedeng/autok3s/pkg/types/apis"
 
 	"github.com/sirupsen/logrus"
 )

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/cnrancher/autok3s/pkg/common"
+	"github.com/orangedeng/autok3s/pkg/common"
 
 	"github.com/rancher/apiserver/pkg/apierror"
 	"github.com/rancher/apiserver/pkg/store/empty"

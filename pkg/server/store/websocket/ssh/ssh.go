@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cnrancher/autok3s/pkg/common"
-	"github.com/cnrancher/autok3s/pkg/hosts"
-	"github.com/cnrancher/autok3s/pkg/hosts/dialer"
-	autok3stypes "github.com/cnrancher/autok3s/pkg/types"
+	"github.com/orangedeng/autok3s/pkg/common"
+	"github.com/orangedeng/autok3s/pkg/hosts"
+	"github.com/orangedeng/autok3s/pkg/hosts/dialer"
+	autok3stypes "github.com/orangedeng/autok3s/pkg/types"
 
 	"github.com/gorilla/websocket"
 	"github.com/rancher/apiserver/pkg/apierror"

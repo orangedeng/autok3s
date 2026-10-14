@@ -9,12 +9,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cnrancher/autok3s/pkg/cluster"
-	"github.com/cnrancher/autok3s/pkg/hosts/dialer"
-	"github.com/cnrancher/autok3s/pkg/providers"
-	"github.com/cnrancher/autok3s/pkg/types"
-	typesk3d "github.com/cnrancher/autok3s/pkg/types/k3d"
-	"github.com/cnrancher/autok3s/pkg/utils"
+	"github.com/orangedeng/autok3s/pkg/cluster"
+	"github.com/orangedeng/autok3s/pkg/hosts/dialer"
+	"github.com/orangedeng/autok3s/pkg/providers"
+	"github.com/orangedeng/autok3s/pkg/types"
+	typesk3d "github.com/orangedeng/autok3s/pkg/types/k3d"
+	"github.com/orangedeng/autok3s/pkg/utils"
 
 	dockerunits "github.com/docker/go-units"
 	cliutil "github.com/k3d-io/k3d/v5/cmd/util"

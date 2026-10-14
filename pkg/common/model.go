@@ -6,10 +6,10 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/cnrancher/autok3s/pkg/metrics"
-	"github.com/cnrancher/autok3s/pkg/providers"
-	"github.com/cnrancher/autok3s/pkg/types"
-	"github.com/cnrancher/autok3s/pkg/types/apis"
+	"github.com/orangedeng/autok3s/pkg/metrics"
+	"github.com/orangedeng/autok3s/pkg/providers"
+	"github.com/orangedeng/autok3s/pkg/types"
+	"github.com/orangedeng/autok3s/pkg/types/apis"
 
 	apitypes "github.com/rancher/apiserver/pkg/types"
 	"github.com/rancher/wrangler/v2/pkg/data/convert"
@@ -144,7 +144,7 @@ func NewClusterDB(ctx context.Context) (*Store, error) {
 	gormDB.WithContext(ctx)
 
 	// Fix: SQLite "database is locked (5) (SQLITE_BUSY)".
-	// Fix: https://github.com/cnrancher/autok3s/issues/460.
+	// Fix: https://github.com/orangedeng/autok3s/issues/460.
 	db, err := gormDB.DB()
 	if err != nil {
 		return nil, err

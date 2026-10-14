@@ -12,9 +12,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cnrancher/autok3s/pkg/hosts"
-	"github.com/cnrancher/autok3s/pkg/types"
-	"github.com/cnrancher/autok3s/pkg/utils"
+	"github.com/orangedeng/autok3s/pkg/hosts"
+	"github.com/orangedeng/autok3s/pkg/types"
+	"github.com/orangedeng/autok3s/pkg/utils"
 	"github.com/sirupsen/logrus"
 
 	"github.com/moby/term"

@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/cnrancher/autok3s/pkg/common"
+	"github.com/orangedeng/autok3s/pkg/common"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"

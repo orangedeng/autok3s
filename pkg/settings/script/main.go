@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cnrancher/autok3s/pkg/settings"
+	"github.com/orangedeng/autok3s/pkg/settings"
 
 	"github.com/sirupsen/logrus"
 )

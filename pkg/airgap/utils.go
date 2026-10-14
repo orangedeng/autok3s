@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cnrancher/autok3s/pkg/common"
-	"github.com/cnrancher/autok3s/pkg/settings"
+	"github.com/orangedeng/autok3s/pkg/common"
+	"github.com/orangedeng/autok3s/pkg/settings"
 	"github.com/pkg/errors"
 )
 

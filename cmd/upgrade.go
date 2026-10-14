@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/cnrancher/autok3s/pkg/providers"
+	"github.com/orangedeng/autok3s/pkg/providers"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"

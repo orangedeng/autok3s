@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/cnrancher/autok3s/pkg/settings"
+	"github.com/orangedeng/autok3s/pkg/settings"
 
 	"github.com/sirupsen/logrus"
 	utilnet "k8s.io/apimachinery/pkg/util/net"

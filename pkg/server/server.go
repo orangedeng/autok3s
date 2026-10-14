@@ -3,8 +3,8 @@ package server
 import (
 	"net/http"
 
-	"github.com/cnrancher/autok3s/pkg/server/proxy"
-	"github.com/cnrancher/autok3s/pkg/server/ui"
+	"github.com/orangedeng/autok3s/pkg/server/proxy"
+	"github.com/orangedeng/autok3s/pkg/server/ui"
 
 	"github.com/gorilla/mux"
 	responsewriter "github.com/rancher/apiserver/pkg/middleware"

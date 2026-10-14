@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cnrancher/autok3s/pkg/common"
-	"github.com/cnrancher/autok3s/pkg/hosts"
-	"github.com/cnrancher/autok3s/pkg/types"
+	"github.com/orangedeng/autok3s/pkg/common"
+	"github.com/orangedeng/autok3s/pkg/hosts"
+	"github.com/orangedeng/autok3s/pkg/types"
 
 	dockertypes "github.com/docker/docker/api/types"
 	containertypes "github.com/docker/docker/api/types/container"

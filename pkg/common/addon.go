@@ -1,7 +1,7 @@
 package common
 
 import (
-	"github.com/cnrancher/autok3s/pkg/types"
+	"github.com/orangedeng/autok3s/pkg/types"
 	apitypes "github.com/rancher/apiserver/pkg/types"
 )
 

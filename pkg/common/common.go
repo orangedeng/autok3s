@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/cnrancher/autok3s/pkg/utils"
+	"github.com/orangedeng/autok3s/pkg/utils"
 
 	"k8s.io/apimachinery/pkg/util/wait"
 )

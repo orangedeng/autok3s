@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/cnrancher/autok3s/pkg/common"
-	"github.com/cnrancher/autok3s/pkg/server"
+	"github.com/orangedeng/autok3s/pkg/common"
+	"github.com/orangedeng/autok3s/pkg/server"
 
 	"github.com/pkg/browser"
 	"github.com/sirupsen/logrus"

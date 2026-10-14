@@ -4,9 +4,9 @@ import (
 	"sort"
 	"strings"
 
-	pkgairgap "github.com/cnrancher/autok3s/pkg/airgap"
-	"github.com/cnrancher/autok3s/pkg/common"
-	"github.com/cnrancher/autok3s/pkg/utils"
+	pkgairgap "github.com/orangedeng/autok3s/pkg/airgap"
+	"github.com/orangedeng/autok3s/pkg/common"
+	"github.com/orangedeng/autok3s/pkg/utils"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/pkg/errors"

@@ -4,8 +4,8 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/cnrancher/autok3s/pkg/common"
 	"github.com/olekukonko/tablewriter"
+	"github.com/orangedeng/autok3s/pkg/common"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )

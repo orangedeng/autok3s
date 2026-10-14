@@ -5,9 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cnrancher/autok3s/pkg/common"
-	pkgsshkey "github.com/cnrancher/autok3s/pkg/sshkey"
-	"github.com/cnrancher/autok3s/pkg/utils"
+	"github.com/orangedeng/autok3s/pkg/common"
+	pkgsshkey "github.com/orangedeng/autok3s/pkg/sshkey"
+	"github.com/orangedeng/autok3s/pkg/utils"
 
 	"github.com/spf13/cobra"
 )

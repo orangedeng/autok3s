@@ -1,4 +1,4 @@
-module github.com/cnrancher/autok3s
+module github.com/orangedeng/autok3s
 
 go 1.24.7
 
@@ -61,7 +61,6 @@ require (
 require (
 	github.com/Microsoft/go-winio v0.6.2
 	github.com/moby/sys/signal v0.7.0
-	k8s.io/component-base v0.34.2
 	k8s.io/kube-openapi v0.0.0-20250710124328-f3f2b991d03b
 	sigs.k8s.io/yaml v1.6.0
 )
@@ -204,9 +203,9 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	k8s.io/apiserver v0.34.2 // indirect
 	k8s.io/cli-runtime v0.34.2 // indirect
+	k8s.io/component-base v0.34.2 // indirect
 	k8s.io/component-helpers v0.34.2 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
-	k8s.io/kubelet v0.34.2 // indirect
 	k8s.io/metrics v0.34.2 // indirect
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397 // indirect
 	modernc.org/libc v1.14.12 // indirect
