@@ -5,7 +5,7 @@ import (
 	"errors"
 	"reflect"
 
-	"github.com/cnrancher/autok3s/pkg/common"
+	"github.com/orangedeng/autok3s/pkg/common"
 	"github.com/rancher/apiserver/pkg/store/empty"
 	"github.com/rancher/apiserver/pkg/types"
 	"github.com/rancher/wrangler/v2/pkg/data/convert"

@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cnrancher/autok3s/pkg/hosts"
-	"github.com/cnrancher/autok3s/pkg/hosts/dialer"
+	"github.com/orangedeng/autok3s/pkg/hosts"
+	"github.com/orangedeng/autok3s/pkg/hosts/dialer"
 
 	"github.com/gorilla/websocket"
 	"github.com/rancher/apiserver/pkg/apierror"

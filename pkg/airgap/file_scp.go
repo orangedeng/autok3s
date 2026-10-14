@@ -8,11 +8,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cnrancher/autok3s/pkg/common"
-	"github.com/cnrancher/autok3s/pkg/hosts"
-	"github.com/cnrancher/autok3s/pkg/hosts/dialer"
-	"github.com/cnrancher/autok3s/pkg/settings"
-	"github.com/cnrancher/autok3s/pkg/types"
+	"github.com/orangedeng/autok3s/pkg/common"
+	"github.com/orangedeng/autok3s/pkg/hosts"
+	"github.com/orangedeng/autok3s/pkg/hosts/dialer"
+	"github.com/orangedeng/autok3s/pkg/settings"
+	"github.com/orangedeng/autok3s/pkg/types"
 
 	"github.com/pkg/errors"
 	"github.com/pkg/sftp"

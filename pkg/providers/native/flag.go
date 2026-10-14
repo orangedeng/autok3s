@@ -3,8 +3,8 @@ package native
 import (
 	"strings"
 
-	"github.com/cnrancher/autok3s/pkg/types"
-	"github.com/cnrancher/autok3s/pkg/types/native"
+	"github.com/orangedeng/autok3s/pkg/types"
+	"github.com/orangedeng/autok3s/pkg/types/native"
 
 	"github.com/rancher/wrangler/v2/pkg/slice"
 )

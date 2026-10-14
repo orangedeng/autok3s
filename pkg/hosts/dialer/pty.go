@@ -10,8 +10,8 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/cnrancher/autok3s/pkg/hosts"
 	"github.com/creack/pty"
+	"github.com/orangedeng/autok3s/pkg/hosts"
 )
 
 var _ hosts.Shell = &PtyShell{}

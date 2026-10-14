@@ -3,7 +3,7 @@ package airgap
 import (
 	"bytes"
 
-	"github.com/cnrancher/autok3s/pkg/settings"
+	"github.com/orangedeng/autok3s/pkg/settings"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"

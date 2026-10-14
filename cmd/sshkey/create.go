@@ -6,9 +6,9 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/cnrancher/autok3s/pkg/common"
-	pkgsshkey "github.com/cnrancher/autok3s/pkg/sshkey"
-	"github.com/cnrancher/autok3s/pkg/utils"
+	"github.com/orangedeng/autok3s/pkg/common"
+	pkgsshkey "github.com/orangedeng/autok3s/pkg/sshkey"
+	"github.com/orangedeng/autok3s/pkg/utils"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/spf13/cobra"

@@ -6,8 +6,8 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/cnrancher/autok3s/pkg/common"
-	"github.com/cnrancher/autok3s/pkg/server/proxy"
+	"github.com/orangedeng/autok3s/pkg/common"
+	"github.com/orangedeng/autok3s/pkg/server/proxy"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"

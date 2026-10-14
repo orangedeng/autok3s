@@ -3,9 +3,9 @@ package k3d
 import (
 	"reflect"
 
-	"github.com/cnrancher/autok3s/pkg/types"
-	"github.com/cnrancher/autok3s/pkg/types/k3d"
-	"github.com/cnrancher/autok3s/pkg/utils"
+	"github.com/orangedeng/autok3s/pkg/types"
+	"github.com/orangedeng/autok3s/pkg/types/k3d"
+	"github.com/orangedeng/autok3s/pkg/utils"
 )
 
 const createUsageExample = `  autok3s -d create \

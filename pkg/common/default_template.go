@@ -1,10 +1,10 @@
 package common
 
 import (
-	"github.com/cnrancher/autok3s/pkg/types/alibaba"
-	"github.com/cnrancher/autok3s/pkg/types/aws"
-	"github.com/cnrancher/autok3s/pkg/types/google"
-	"github.com/cnrancher/autok3s/pkg/types/tencent"
+	"github.com/orangedeng/autok3s/pkg/types/alibaba"
+	"github.com/orangedeng/autok3s/pkg/types/aws"
+	"github.com/orangedeng/autok3s/pkg/types/google"
+	"github.com/orangedeng/autok3s/pkg/types/tencent"
 )
 
 var DefaultTemplates = map[string]interface{}{

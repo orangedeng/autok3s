@@ -12,12 +12,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cnrancher/autok3s/pkg/airgap"
-	"github.com/cnrancher/autok3s/pkg/common"
-	"github.com/cnrancher/autok3s/pkg/hosts/dialer"
-	"github.com/cnrancher/autok3s/pkg/providers"
-	"github.com/cnrancher/autok3s/pkg/types"
-	"github.com/cnrancher/autok3s/pkg/utils"
+	"github.com/orangedeng/autok3s/pkg/airgap"
+	"github.com/orangedeng/autok3s/pkg/common"
+	"github.com/orangedeng/autok3s/pkg/hosts/dialer"
+	"github.com/orangedeng/autok3s/pkg/providers"
+	"github.com/orangedeng/autok3s/pkg/types"
+	"github.com/orangedeng/autok3s/pkg/utils"
 
 	"github.com/pkg/errors"
 	"github.com/rancher/wharfie/pkg/registries"

@@ -3,9 +3,9 @@ package common
 import (
 	"context"
 
-	"github.com/cnrancher/autok3s/pkg/settings"
-	"github.com/cnrancher/autok3s/pkg/types"
-	"github.com/cnrancher/autok3s/pkg/utils"
+	"github.com/orangedeng/autok3s/pkg/settings"
+	"github.com/orangedeng/autok3s/pkg/types"
+	"github.com/orangedeng/autok3s/pkg/utils"
 	"github.com/sirupsen/logrus"
 
 	"github.com/glebarez/sqlite"

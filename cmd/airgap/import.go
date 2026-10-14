@@ -4,8 +4,8 @@ import (
 	"errors"
 	"os"
 
-	pkgairgap "github.com/cnrancher/autok3s/pkg/airgap"
-	"github.com/cnrancher/autok3s/pkg/common"
+	pkgairgap "github.com/orangedeng/autok3s/pkg/airgap"
+	"github.com/orangedeng/autok3s/pkg/common"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/spf13/cobra"

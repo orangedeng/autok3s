@@ -4,9 +4,9 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/cnrancher/autok3s/pkg/common"
-	"github.com/cnrancher/autok3s/pkg/settings"
 	k3dutil "github.com/k3d-io/k3d/v5/cmd/util"
+	"github.com/orangedeng/autok3s/pkg/common"
+	"github.com/orangedeng/autok3s/pkg/settings"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 

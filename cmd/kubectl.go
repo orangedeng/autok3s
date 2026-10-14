@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/cnrancher/autok3s/pkg/cli/kubectl"
+	"github.com/orangedeng/autok3s/pkg/cli/kubectl"
 
 	"github.com/spf13/cobra"
 )

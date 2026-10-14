@@ -10,10 +10,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cnrancher/autok3s/pkg/common"
-	"github.com/cnrancher/autok3s/pkg/providers"
-	"github.com/cnrancher/autok3s/pkg/providers/k3d"
-	autok3stypes "github.com/cnrancher/autok3s/pkg/types/apis"
+	"github.com/orangedeng/autok3s/pkg/common"
+	"github.com/orangedeng/autok3s/pkg/providers"
+	"github.com/orangedeng/autok3s/pkg/providers/k3d"
+	autok3stypes "github.com/orangedeng/autok3s/pkg/types/apis"
 
 	"github.com/gorilla/mux"
 	"github.com/rancher/apiserver/pkg/apierror"

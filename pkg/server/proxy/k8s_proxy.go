@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/cnrancher/autok3s/pkg/utils"
+	"github.com/orangedeng/autok3s/pkg/utils"
 
 	"github.com/sirupsen/logrus"
 	k8sproxy "k8s.io/apimachinery/pkg/util/proxy"

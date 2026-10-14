@@ -1,7 +1,7 @@
 package common
 
 import (
-	"github.com/cnrancher/autok3s/pkg/settings"
+	"github.com/orangedeng/autok3s/pkg/settings"
 
 	"github.com/pborman/uuid"
 )

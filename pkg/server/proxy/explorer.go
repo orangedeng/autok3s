@@ -6,8 +6,8 @@ import (
 	"net/http/httputil"
 	"strings"
 
-	"github.com/cnrancher/autok3s/pkg/common"
 	"github.com/gorilla/mux"
+	"github.com/orangedeng/autok3s/pkg/common"
 	"github.com/rancher/apiserver/pkg/urlbuilder"
 )
 

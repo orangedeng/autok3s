@@ -3,8 +3,8 @@ package sshkey
 import (
 	"fmt"
 
-	"github.com/cnrancher/autok3s/pkg/common"
-	pkgsshkey "github.com/cnrancher/autok3s/pkg/sshkey"
+	"github.com/orangedeng/autok3s/pkg/common"
+	pkgsshkey "github.com/orangedeng/autok3s/pkg/sshkey"
 
 	"github.com/rancher/apiserver/pkg/apierror"
 	"github.com/rancher/apiserver/pkg/store/empty"

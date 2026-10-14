@@ -3,7 +3,7 @@ package cluster
 import (
 	"testing"
 
-	"github.com/cnrancher/autok3s/pkg/types"
+	"github.com/orangedeng/autok3s/pkg/types"
 	"github.com/stretchr/testify/assert"
 )
 

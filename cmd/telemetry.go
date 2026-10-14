@@ -3,7 +3,7 @@ package cmd
 import (
 	"strconv"
 
-	"github.com/cnrancher/autok3s/pkg/common"
+	"github.com/orangedeng/autok3s/pkg/common"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"

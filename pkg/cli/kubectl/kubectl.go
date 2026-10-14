@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/cnrancher/autok3s/pkg/common"
+	"github.com/orangedeng/autok3s/pkg/common"
 	"github.com/sirupsen/logrus"
 	"k8s.io/kubectl/pkg/cmd"
 )

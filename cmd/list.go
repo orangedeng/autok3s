@@ -6,7 +6,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/cnrancher/autok3s/pkg/cluster"
+	"github.com/orangedeng/autok3s/pkg/cluster"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/sirupsen/logrus"

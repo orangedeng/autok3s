@@ -1,9 +1,9 @@
 package provider
 
 import (
-	"github.com/cnrancher/autok3s/pkg/providers"
-	"github.com/cnrancher/autok3s/pkg/server/store/utils"
-	autok3stypes "github.com/cnrancher/autok3s/pkg/types/apis"
+	"github.com/orangedeng/autok3s/pkg/providers"
+	"github.com/orangedeng/autok3s/pkg/server/store/utils"
+	autok3stypes "github.com/orangedeng/autok3s/pkg/types/apis"
 
 	"github.com/rancher/apiserver/pkg/apierror"
 	"github.com/rancher/apiserver/pkg/store/empty"

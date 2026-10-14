@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	pkgairgap "github.com/cnrancher/autok3s/pkg/airgap"
-	"github.com/cnrancher/autok3s/pkg/common"
+	pkgairgap "github.com/orangedeng/autok3s/pkg/airgap"
+	"github.com/orangedeng/autok3s/pkg/common"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
