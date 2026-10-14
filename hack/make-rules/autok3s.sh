@@ -9,7 +9,6 @@ CURR_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 # The root of the autok3s directory
 ROOT_DIR="${CURR_DIR}"
 CROSS=${CROSS:-}
-UI_VERSION="v0.9.3"
 
 source "${ROOT_DIR}/hack/lib/init.sh"
 source "${CURR_DIR}/hack/lib/constant.sh"
@@ -34,10 +33,25 @@ function mod() {
 }
 
 function ui() {
-  autok3s::log::info "downloading autok3s ui ${UI_VERSION}"
-  cd pkg/server/ui
-  curl -sL https://autok3s-ui.s3-ap-southeast-2.amazonaws.com/${UI_VERSION}.tar.gz | tar xvzf -
-  cd ${CURR_DIR}
+  if [[ "${AUTOK3S_SKIP_UI:-}" == "true" ]]; then
+    autok3s::log::info "skipping autok3s ui build (AUTOK3S_SKIP_UI=true)"
+    if [[ ! -d pkg/server/ui/static ]]; then
+      autok3s::log::fatal "pkg/server/ui/static is missing, remove AUTOK3S_SKIP_UI to build the ui first"
+    fi
+    return 0
+  fi
+  autok3s::log::info "building autok3s ui from source (ui/)..."
+  if ! command -v npm >/dev/null 2>&1; then
+    autok3s::log::fatal "npm is required to build the bundled ui"
+  fi
+  rm -rf pkg/server/ui/static
+  pushd ui >/dev/null || return
+  npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+  npm run build
+  rm -rf ../pkg/server/ui/static
+  mv dist/static ../pkg/server/ui/static
+  popd >/dev/null || return
+  autok3s::log::info "autok3s ui build done"
 }
 
 function go_generate() {
@@ -62,7 +76,14 @@ function lint() {
 
 function build() {
   [[ "${1:-}" != "only" ]] && lint
-  ui
+
+  # Kick off the ui build in the background so it overlaps with go generate
+  # and build preparation. The go build below waits for it before compiling,
+  # as the ui assets are embedded via go:embed.
+  autok3s::log::info "building autok3s ui in background..."
+  ui &
+  local ui_pid=$!
+
   go_generate
   autok3s::log::info "building autok3s(${GIT_VERSION},${GIT_COMMIT},${GIT_TREE_STATE},${BUILD_DATE})..."
   # TODO default k3s version in k3d should also get from k3d in
@@ -86,6 +107,11 @@ function build() {
     -w -s"
   local ext_flags="
     -extldflags '-static'"
+
+  # wait for the background ui build to finish before embedding
+  if ! wait "${ui_pid}"; then
+    autok3s::log::fatal "autok3s ui build failed"
+  fi
 
   local platforms=""
   if [ -z "${CROSS}" ]; then 
@@ -222,8 +248,4 @@ function entry() {
   done
 }
 
-if [[  -z "${AUTOK3S_DEV_MODE:-}" ]]; then
-  autok3s::dapper::run -C "${CURR_DIR}" -f ${DAPPER_FILE:-Dockerfile.dapper} "$@"
-else
-  entry "$@"
-fi
+entry "$@"

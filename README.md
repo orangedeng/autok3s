@@ -44,10 +44,10 @@ Scenario 1 - Run with docker:
 ```bash
 # The commands will start autok3s daemon with an interactionable UI.
 # Standard Linux (Recommended)
-$ docker run -itd --restart=unless-stopped --net=host -v /var/run/docker.sock:/var/run/docker.sock cnrancher/autok3s:v0.9.3
+$ docker run -itd --restart=unless-stopped --net=host -v /var/run/docker.sock:/var/run/docker.sock orstar/autok3s:v0.9.3
 
 # MacOS
-$ docker run -itd --restart=unless-stopped -p 8080:8080 -v /var/run/docker.sock:/var/run/docker.sock -e DOCKER_HOST="" cnrancher/autok3s:v0.9.3
+$ docker run -itd --restart=unless-stopped -p 8080:8080 -v /var/run/docker.sock:/var/run/docker.sock -e DOCKER_HOST="" orstar/autok3s:v0.9.3
 ```
 
 Scenario 2 - Run with docker-compose
@@ -60,9 +60,11 @@ docker-compose up -d
 
 Scenario 3 - Run with cli:
 
+Download the executable for your platform from the [Releases](https://github.com/orangedeng/autok3s/releases) page, then:
+
 ```bash
-# The commands use the shell script on MacOS and Linux, or visit the Releases page to download the executable for Windows.
-curl -sS https://rancher-mirror.rancher.cn/autok3s/install.sh  | sh
+chmod +x ./autok3s
+sudo mv ./autok3s /usr/local/bin
 
 # The commands will start autok3s daemon and popup default browser with an interactionable UI.
 autok3s -d serve
@@ -70,12 +72,11 @@ autok3s -d serve
 
 ## Uninstall
 
-> For v0.5.0 or newer version
-
-To uninstall autok3s cli, please execute command below:
+To uninstall autok3s cli, please execute commands below:
 
 ```bash
-/usr/local/bin/autok3s-uninstall.sh
+sudo rm -f /usr/local/bin/autok3s
+rm -rf ~/.autok3s
 ```
 
 ## Demo Video
@@ -93,13 +94,11 @@ Watch the demo:
 
 ## Developers' Guide
 
-Use `dapper` to manage project compilation, testing and packaging.
+Use `make` to manage project compilation, testing and packaging.
 
 - compilation: `make autok3s build`
 - testing: `make autok3s unit`
 - packing: `make autok3s package only`
-
-Install `dapper` please follow the [dapper](https://github.com/rancher/dapper) project.
 
 ## Source Code
 

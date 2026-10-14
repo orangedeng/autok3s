@@ -1,0 +1,15 @@
+<template>
+  <div>
+    <page-header>
+      <template #title>Clusters</template>
+      <template #actions>
+        <router-link :to="{ name: 'ClusterExplorerCoreClustersCreate' }" class="btn role-primary">Create</router-link>
+      </template>
+    </page-header>
+    <cluster-table></cluster-table>
+  </div>
+</template>
+<script setup>
+import ClusterTable from './components/ClusterTable.vue'
+import PageHeader from '@/views/components/PageHeader.vue'
+</script>

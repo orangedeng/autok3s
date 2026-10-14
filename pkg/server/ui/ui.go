@@ -12,7 +12,7 @@ import (
 
 const (
 	localUI        = "./static"
-	uiDefaultIndex = "https://autok3s-ui.s3-ap-southeast-2.amazonaws.com/static/index.html"
+	uiDefaultIndex = "http://localhost:5173"
 )
 
 var (

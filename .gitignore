@@ -26,15 +26,12 @@ bin/
 sha256sum*
 main
 
-## Dapper temporary files
-**/Dockerfile.dapper*
-!**/Dockerfile.dapper
 .autok3s/
 static/
+node_modules/
 upx*.tar.xz
 upx*/
 .vscode/
-.dapper
 
 # Others
 pkg/settings/install.sh

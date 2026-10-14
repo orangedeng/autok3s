@@ -35,7 +35,7 @@ function autok3s::version::get_version_vars() {
   if [[ -z "$(command -v git)" ]]; then
     GIT_COMMIT="unknown"
     GIT_TREE_STATE="unknown"
-    GIT_VERSION=${DRONE_TAG:-unknown}
+    GIT_VERSION="unknown"
     return
   fi
 
@@ -52,8 +52,8 @@ function autok3s::version::get_version_vars() {
 
   if [[ -n ${GIT_VERSION:-} ]] || HEAD_TAG="$(git rev-parse --abbrev-ref HEAD | sed -E 's/[^a-zA-Z0-9]+/-/g' 2>/dev/null)"; then
     # check if the HEAD is tagged.
-    if git_tag=$(git tag -l --contains HEAD | head -n 1 2>/dev/null) && [[ -n ${DRONE_TAG:-${git_tag}} ]]; then
-      GIT_VERSION="${DRONE_TAG:-${git_tag}}"
+    if git_tag=$(git tag -l --contains HEAD | head -n 1 2>/dev/null) && [[ -n ${git_tag} ]]; then
+      GIT_VERSION="${git_tag}"
 
       # refuse to build if tag is not a valid Semantic Version
       if ! [[ "${GIT_VERSION}" =~ ^v([0-9]+)\.([0-9]+)(\.[0-9]+)?(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then

@@ -14,10 +14,30 @@ on:
       - 'go.work*'
       - 'Makefile'
       - 'hack/**'
+      - 'ui/**'
       - '.golangci*'
       - '.github/workflows/pr.yaml'
 jobs:
-  pr-build:
+  ui:
+    name: UI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Lint
+        run: |
+          cd ui
+          npm ci --no-audit --no-fund
+          npm run lint
+      - name: Build
+        run: |
+          cd ui
+          npm run build
+  go:
+    name: Go
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -34,6 +54,11 @@ jobs:
         with:
           version: v2.5.0
       - name: Build to test
+        env:
+          AUTOK3S_SKIP_UI: "true"
         run: |
+          # placeholder to satisfy go:embed; the real ui is built by the UI job
+          mkdir -p pkg/server/ui/static
+          echo "ui skipped" > pkg/server/ui/static/index.html
           make autok3s build only
           bin/$(go env GOOS)/$(go env GOARCH)/autok3s version

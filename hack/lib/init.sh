@@ -17,7 +17,6 @@ source "${ROOT_DIR}/hack/lib/version.sh"
 source "${ROOT_DIR}/hack/lib/mockgen.sh"
 source "${ROOT_DIR}/hack/lib/lint.sh"
 source "${ROOT_DIR}/hack/lib/docker.sh"
-source "${ROOT_DIR}/hack/lib/dapper.sh"
 source "${ROOT_DIR}/hack/lib/ginkgo.sh"
 source "${ROOT_DIR}/hack/lib/upx.sh"
 
