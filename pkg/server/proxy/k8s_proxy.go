@@ -1,9 +1,12 @@
 package proxy
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 
 	"github.com/cnrancher/autok3s/pkg/utils"
 
@@ -14,6 +17,41 @@ import (
 )
 
 type K8sProxyHandler struct{}
+
+// transportCache caches http.RoundTrippers keyed by the sha256 of the
+// kubeconfig content. Creating a new transport per request leaks idle
+// connections (and therefore local ephemeral ports) because each transport
+// keeps its own connection pool which is never closed.
+var (
+	transportCache = sync.Map{}
+	cacheMutex     sync.Mutex
+)
+
+func getTransportForConfig(kubeconfig string) (http.RoundTripper, error) {
+	sum := sha256.Sum256([]byte(kubeconfig))
+	key := hex.EncodeToString(sum[:])
+
+	if cached, ok := transportCache.Load(key); ok {
+		return cached.(http.RoundTripper), nil
+	}
+
+	cacheMutex.Lock()
+	defer cacheMutex.Unlock()
+	if cached, ok := transportCache.Load(key); ok {
+		return cached.(http.RoundTripper), nil
+	}
+
+	cfg, err := clientcmd.RESTConfigFromKubeConfig([]byte(kubeconfig))
+	if err != nil {
+		return nil, err
+	}
+	transport, err := rest.TransportFor(cfg)
+	if err != nil {
+		return nil, err
+	}
+	transportCache.Store(key, transport)
+	return transport, nil
+}
 
 func NewK8sProxy() http.Handler {
 	return &K8sProxyHandler{}
@@ -29,6 +67,7 @@ func (r *errorResponder) Error(w http.ResponseWriter, _ *http.Request, err error
 func (kh *K8sProxyHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	config := req.Header.Get("config")
 	cfg, err := clientcmd.RESTConfigFromKubeConfig([]byte(utils.StringSupportBase64(config)))
+
 	if err != nil {
 		rw.WriteHeader(http.StatusInternalServerError)
 		_, _ = rw.Write([]byte(err.Error()))
@@ -49,7 +88,7 @@ func (kh *K8sProxyHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) 
 	u.RawQuery = req.URL.RawQuery
 	req.URL.Host = req.Host
 	responder := &errorResponder{}
-	transport, err := rest.TransportFor(cfg)
+	transport, err := getTransportForConfig(utils.StringSupportBase64(config))
 	if err != nil {
 		rw.WriteHeader(http.StatusInternalServerError)
 		_, _ = rw.Write([]byte(err.Error()))
