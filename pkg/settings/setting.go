@@ -27,8 +27,6 @@ var (
 	settings        = map[string]Setting{}
 	provider        Provider
 	WhitelistDomain = newSetting("whitelist-domain", "", "the domains or ips which allowed in autok3s UI proxy")
-	EnableMetrics   = newSetting("enable-metrics", "promote", "Should enable telemetry or not")
-	InstallUUID     = newSetting("install-uuid", "", "The autok3s instance unique install id")
 
 	InstallScript         = newSetting("install-script", "", "The k3s offline install script with base64 encode")
 	ScriptUpdateSource    = newSetting("install-script-source-repo", "https://rancher-mirror.rancher.cn/k3s/k3s-install.sh", "The install script auto update source, github or aliyun oss")
