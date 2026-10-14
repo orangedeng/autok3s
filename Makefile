@@ -28,7 +28,6 @@ help:
 	#   -        verify, v  :  run integration tests.
 	#   -           e2e, e  :  run e2e tests.
 	#   only executing the corresponding "action" of a "stage" needs the `only` suffix.
-	#   running make process by rancher/dapper, or running locally by `AUTOK3S_DEV_MODE=true` .
 	#
 	# Example:
 	#   -   make autok3s  :  execute `build` stage for autok3s.

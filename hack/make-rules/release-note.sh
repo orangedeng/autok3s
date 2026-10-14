@@ -2,7 +2,7 @@
 
 set -e
 
-GIT_VERSION=${DRONE_TAG:-${GITHUB_REF#refs/tags/}}
+GIT_VERSION=${GITHUB_REF#refs/tags/}
 TARGET_PATH="$1"
 RC_RELEASE="false"
 
