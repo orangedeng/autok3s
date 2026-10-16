@@ -1,5 +1,5 @@
 > [!NOTE]
-> **Fork 状态说明**：上游仓库 [cnrancher/autok3s](https://github.com/cnrancher/autok3s) 已不再活跃维护。本 fork 用于在上游项目基础上进行简单的 feature 增加与 bug 修复，并非上游项目的官方延续，相关改动以尽力而为（best-effort）的方式维护。
+> **项目说明**：本项目 fork 自 [cnrancher/autok3s](https://github.com/cnrancher/autok3s)（上游已不再活跃维护），现作为独立项目维护，包含内置 Web UI（源码位于本仓库 `ui/` 目录）。相关改动以尽力而为（best-effort）的方式维护。
 
 ## 什么是 AutoK3s
 
@@ -77,7 +77,7 @@ rm -rf ~/.autok3s
 
 ## 演示视频
 
-在以下演示中，我们将在 1 分钟左右的时间内通过 K3d 启动 K3s集群，并且我们将使用集成在 AutoK3s 中的 kube-explorer 工具，对不同 K3s 集群的资源进行管理。
+在以下演示中，我们将在 1 分钟左右的时间内通过 K3d 启动 K3s集群，并且我们将使用 AutoK3s 内置的 Web UI，对不同 K3s 集群的资源进行管理。
 
 观看演示：
 ![](../../assets/autok3s-v0.7.0-demo.gif)
@@ -109,13 +109,13 @@ docker run -itd --restart=unless-stopped -p 8080:8080 --volumes-from <old-contai
 
 ## 源码
 
-AutoK3s是 100% 开源的软件，该项目相关的源码包括：
+AutoK3s 是 100% 开源的软件，本仓库包含主程序与内置 Web UI（`ui/` 目录）的全部源码：
+
+- https://github.com/orangedeng/autok3s
+
+上游项目（已不再活跃维护）：
 
 - https://github.com/cnrancher/autok3s
-- https://github.com/cnrancher/autok3s-ui
-- https://github.com/cnrancher/kube-explorer
-
-由 SUSE(Rancher E&I) Team 贡献
 
 # License
 

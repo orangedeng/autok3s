@@ -245,22 +245,9 @@ autok3s -d create \
     --registry /etc/autok3s/registries.yaml
 ```
 
-### Enable UI Component
+### UI Component
 
-AutoK3s support [cnrancher/kube-explorer](https://github.com/cnrancher/kube-explorer) as UI Component.
+Cluster exploration (workloads, logs, terminal and exec) is built into
+the bundled web ui served by `autok3s serve` at `/ui/`. No additional
+component such as kube-explorer is required.
 
-#### Enable kube-explorer dashboard
-
-You can enable kube-explorer using following command.
-
-```bash
-autok3s explorer --context myk3s.myns.harvester --port 9999
-```
-
-You can enable kube-explorer when creating K3s Cluster by UI.
-
-![](../../../assets/enable-kube-explorer-by-create-cluster.png)
-
-You can also enable/disable kube-explorer any time from UI, and access kube-explorer dashboard by `dashboard` button.
-
-![](../../../assets/enable-kube-explorer-by-button.png)
