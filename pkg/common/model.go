@@ -22,7 +22,6 @@ var (
 		&Template{},
 		&Credential{},
 		&Setting{},
-		&Explorer{},
 		&Package{},
 		&SSHKey{},
 		&Addon{},
@@ -83,17 +82,6 @@ type Credential struct {
 
 func (c *Credential) GetID() string {
 	return strconv.Itoa(c.ID)
-}
-
-// Explorer struct
-type Explorer struct {
-	ContextName string `json:"context-name" gorm:"primaryKey;not null"`
-	Enabled     bool   `json:"enabled" gorm:"type:bool"`
-	Port        int    `json:"port"`
-}
-
-func (e *Explorer) GetID() string {
-	return e.ContextName
 }
 
 // Setting struct
@@ -600,48 +588,6 @@ func (d *Store) DeleteCredential(id int) error {
 	cred := &Credential{}
 	result := d.DB.Where("id = ? ", id).Delete(cred)
 	return result.Error
-}
-
-// SaveExplorer save cluster kube-explorer settings
-func (d *Store) SaveExplorer(exp *Explorer) error {
-	e, err := d.GetExplorer(exp.ContextName)
-	if err != nil {
-		return err
-	}
-	if e != nil {
-		// update explorer setting
-		result := d.DB.Where("context_name = ? ", exp.ContextName).Omit("context_name").Save(exp)
-		return result.Error
-	}
-	// save explorer setting
-	result := d.DB.Create(exp)
-	return result.Error
-}
-
-// GetExplorer return explorer setting for specified cluster
-func (d *Store) GetExplorer(clusterID string) (*Explorer, error) {
-	exp := &Explorer{}
-	result := d.DB.Where("context_name = ? ", clusterID).Find(exp)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	if result.RowsAffected == 0 {
-		return nil, nil
-	}
-	return exp, nil
-}
-
-// DeleteExplorer remove explorer setting for specified cluster
-func (d *Store) DeleteExplorer(clusterID string) error {
-	result := d.DB.Where("context_name = ? ", clusterID).Delete(&Explorer{})
-	return result.Error
-}
-
-// ListExplorer return all kube-explorer settings
-func (d *Store) ListExplorer() ([]*Explorer, error) {
-	list := make([]*Explorer, 0)
-	result := d.DB.Find(&list)
-	return list, result.Error
 }
 
 // GetSetting return specified setting by name

@@ -14,7 +14,6 @@
 </template>
 <script setup>
 import { cloneDeep } from '@/utils'
-import useExplorerStore from '@/store/useExplorerStore.js'
 import { computed } from 'vue'
 
 const props = defineProps({
@@ -26,7 +25,6 @@ const props = defineProps({
 
 const emit = defineEmits(['exec-command'])
 
-const explorerStore = useExplorerStore()
 const actions = computed(() => {
   const status = props.cluster.status?.toLowerCase()
 
@@ -63,21 +61,6 @@ const actions = computed(() => {
         command: 'generateCliCommand'
       }
     ]
-
-    const explorer = explorerStore.clusterExplorerMap[props.cluster.id]
-    if (explorer?.links?.explorer) {
-      actions.push({
-        label: 'Disabe Explorer',
-        icon: 'terminal',
-        command: 'disableExplorer'
-      })
-    } else {
-      actions.push({
-        label: 'Enable Explorer',
-        icon: 'terminal',
-        command: 'enableExplorer'
-      })
-    }
 
     actions.push({
       label: 'Download KubeConfig',

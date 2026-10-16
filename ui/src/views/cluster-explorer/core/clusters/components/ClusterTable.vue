@@ -65,7 +65,6 @@
         <template #default="{ row }">
           <div class="flex items-center justify-end gap-4px">
             <HelmDashboardLink :cluster="row" />
-            <ExplorerLink :cluster-id="row.id" />
             <ClusterActions :cluster="row" @exec-command="handleCommand" />
           </div>
         </template>
@@ -120,11 +119,10 @@
 </template>
 <script setup>
 import { useRouter } from 'vue-router'
-import { remove, fetchById, disableExplorer, enableExplorer } from '@/api/cluster.js'
+import { remove, fetchById } from '@/api/cluster.js'
 import ClusterActions from './ClusterActions.vue'
 import ClusterBulkActions from './ClusterBulkActions.vue'
 import ClusterStateTag from './ClusterStateTag.vue'
-import ExplorerLink from './ExplorerLink.vue'
 import HelmDashboardLink from './HelmDashboardLink.vue'
 import JoinNodeModal from './JoinNodeModal.vue'
 import ViewKubeconfigModal from './ViewKubeconfigModal.vue'
@@ -367,36 +365,6 @@ const handleCommand = ({ command, data }) => {
             notificationStore.notify({
               type: 'error',
               title: 'Load Cluster Failed',
-              content: stringify(err)
-            })
-          }
-        })
-      break
-    case 'disableExplorer':
-      disableExplorer(cluster).catch((err) => {
-        if (err) {
-          notificationStore.notify({
-            type: 'error',
-            title: 'Disable explorer Error',
-            content: stringify(err)
-          })
-        }
-      })
-      break
-    case 'enableExplorer':
-      enableExplorer(cluster)
-        .then(({ data }) => {
-          notificationStore.notify({
-            type: 'success',
-            title: 'Enable kube-explorer success',
-            content: stringify(data)
-          })
-        })
-        .catch((err) => {
-          if (err) {
-            notificationStore.notify({
-              type: 'error',
-              title: 'Enable explorer Error',
               content: stringify(err)
             })
           }

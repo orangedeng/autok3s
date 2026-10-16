@@ -66,11 +66,6 @@ type KubeconfigOutput struct {
 	Config string `json:"config"`
 }
 
-// EnableExplorerOutput struct for enable-explorer action
-type EnableExplorerOutput struct {
-	Data string `json:"data"`
-}
-
 type UpgradeInput struct {
 	InstallScript string `json:"k3s-install-script,omitempty"`
 	K3sChannel    string `json:"k3s-channel,omitempty"`

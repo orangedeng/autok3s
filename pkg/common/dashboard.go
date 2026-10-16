@@ -21,6 +21,14 @@ const HelmDashboardCommand = "helm-dashboard"
 
 var dashboardBindAddress = "127.0.0.1"
 
+// CheckCommandExist returns an error if the given command is not found in PATH.
+func CheckCommandExist(commandName string) error {
+	if _, err := exec.LookPath(commandName); err != nil {
+		return fmt.Errorf("%s is not installed, please install it first", commandName)
+	}
+	return nil
+}
+
 func SwitchDashboard(ctx context.Context, enabled string) error {
 	if enabled == "true" {
 		// check if cluster list is empty

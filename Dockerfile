@@ -1,5 +1,3 @@
-ARG KUBE_EXPLORER_VERSION=latest
-FROM cnrancher/kube-explorer:${KUBE_EXPLORER_VERSION} as kube-explorer
 FROM registry.suse.com/bci/bci-base:15.7
 ARG TARGETPLATFORM
 ARG TARGETARCH
@@ -14,8 +12,6 @@ RUN mkdir /home/shell && \
     echo 'alias k="kubectl"' >> /home/shell/.bashrc && \
     echo 'source <(kubectl completion bash)' >> /home/shell/.bashrc && \
     echo 'PS1="> "' >> /home/shell/.bashrc
-
-COPY --from=kube-explorer /usr/bin/kube-explorer /usr/local/bin/kube-explorer
 
 RUN curl -sLf https://github.com/komodorio/helm-dashboard/releases/download/v${HELM_DASHBOARD_VERSION}/helm-dashboard_${HELM_DASHBOARD_VERSION}_Linux_x86_64.tar.gz | tar xvzf - -C /usr/local/bin && \
     chmod +x /usr/local/bin/helm-dashboard

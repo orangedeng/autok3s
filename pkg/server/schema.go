@@ -7,7 +7,6 @@ import (
 	"github.com/orangedeng/autok3s/pkg/server/store/addon"
 	"github.com/orangedeng/autok3s/pkg/server/store/cluster"
 	"github.com/orangedeng/autok3s/pkg/server/store/credential"
-	"github.com/orangedeng/autok3s/pkg/server/store/explorer"
 	"github.com/orangedeng/autok3s/pkg/server/store/kubectl"
 	"github.com/orangedeng/autok3s/pkg/server/store/pkg"
 	"github.com/orangedeng/autok3s/pkg/server/store/provider"
@@ -33,7 +32,6 @@ func initProvider(s *types.APISchemas) {
 
 func initCluster(s *types.APISchemas) {
 	s.MustImportAndCustomize(autok3stypes.KubeconfigOutput{}, nil)
-	s.MustImportAndCustomize(autok3stypes.EnableExplorerOutput{}, nil)
 	s.MustImportAndCustomize(autok3stypes.UpgradeInput{}, nil)
 	s.MustImportAndCustomize(autok3stypes.Cluster{}, func(schema *types.APISchema) {
 		schema.Store = &cluster.Store{}
@@ -43,10 +41,6 @@ func initCluster(s *types.APISchemas) {
 		schema.ResourceActions["join"] = wranglertypes.Action{
 			Input: "cluster",
 		}
-		schema.ResourceActions["enable-explorer"] = wranglertypes.Action{
-			Output: "enableExplorerOutput",
-		}
-		schema.ResourceActions["disable-explorer"] = wranglertypes.Action{}
 		schema.ResourceActions["download-kubeconfig"] = wranglertypes.Action{
 			Output: "kubeconfigOutput",
 		}
@@ -102,16 +96,6 @@ func initTemplates(s *types.APISchemas) {
 		schema.CollectionMethods = []string{http.MethodGet, http.MethodPost}
 		schema.ResourceMethods = []string{http.MethodGet, http.MethodDelete, http.MethodPut}
 
-	})
-}
-
-func initExplorer(s *types.APISchemas) {
-	s.MustImportAndCustomize(common.Explorer{}, func(schema *types.APISchema) {
-		schema.Store = &explorer.Store{}
-		formatter := explorer.NewFormatter()
-		schema.Formatter = formatter.Formatter
-		schema.CollectionMethods = []string{http.MethodGet}
-		schema.ResourceMethods = []string{http.MethodGet}
 	})
 }
 

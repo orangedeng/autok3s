@@ -46,7 +46,7 @@ func DashboardCommand() *cobra.Command {
 		if dashboardPort == 0 {
 			port, err := k3dutil.GetFreePort()
 			if err != nil {
-				logrus.Fatalf("failed to get free port for kube-explorer: %v", err)
+				logrus.Fatalf("failed to get free port for helm-dashboard: %v", err)
 			}
 			dashboardPort = port
 		}

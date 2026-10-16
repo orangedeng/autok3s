@@ -35,10 +35,6 @@ func ServeCommand() *cobra.Command {
 		router := server.Start()
 		addr := fmt.Sprintf("%s:%s", bindAddress, bindPort)
 
-		// start kube-explorer for K3s clusters
-		go func(ctx context.Context) {
-			common.InitExplorer(ctx)
-		}(serveCmd.Context())
 		// start helm-dashboard server
 		go func(ctx context.Context) {
 			common.InitDashboard(ctx)

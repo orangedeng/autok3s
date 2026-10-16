@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -77,7 +76,6 @@ func initCfg() {
 		logrus.Fatalln(err)
 	}
 
-	common.ExplorerWatchers = map[string]context.CancelFunc{}
 	common.FileManager = &common.ConfigFileManager{}
 }
 

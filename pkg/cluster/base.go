@@ -103,7 +103,7 @@ func (p *ProviderBase) GetCreateOptions() []types.Flag {
 			Name:  "enable",
 			P:     &p.Enable,
 			V:     p.Enable,
-			Usage: "Deploy add-ons (internal add-on: \"explorer\", \"rancher\"), e.g.(--enable explorer), explorer is simplify UI for K3s(cnrnacher/kube-explorer). Other add-ons can be found by `autok3s add-ons ls`",
+			Usage: "Deploy add-ons (internal add-on: \"rancher\"), e.g.(--enable rancher). Other add-ons can be found by `autok3s add-ons ls`",
 		},
 		{
 			Name:  "package-name",
@@ -481,13 +481,11 @@ func (p *ProviderBase) InitCluster(options interface{}, deployCCM func() []strin
 
 	if p.Enable != nil {
 		for _, plugin := range p.Enable {
-			if plugin != "explorer" {
-				cmd, err := p.addonInstallation(plugin)
-				if err != nil {
-					continue
-				}
-				cmds = append(cmds, cmd)
+			cmd, err := p.addonInstallation(plugin)
+			if err != nil {
+				continue
 			}
+			cmds = append(cmds, cmd)
 		}
 	}
 
@@ -876,21 +874,6 @@ func (p *ProviderBase) DeleteCluster(force bool, delete func(f bool) (string, er
 		err = common.DefaultDB.DeleteCluster(p.Name, p.Provider)
 		if err != nil && !force {
 			return fmt.Errorf("[%s] failed to delete cluster state, msg: %v", p.Provider, err)
-		}
-
-		// release kube-explorer
-		exp, err := common.DefaultDB.GetExplorer(p.ContextName)
-		if err != nil && !force {
-			return fmt.Errorf("[%s] failed to get kube-explorer config for cluster %s: %v", p.Provider, p.ContextName, err)
-		}
-		if exp != nil {
-			if exp.Enabled {
-				_ = common.DisableExplorer(p.ContextName)
-			}
-			err = common.DefaultDB.DeleteExplorer(p.ContextName)
-			if err != nil && !force {
-				return fmt.Errorf("[%s] failed to delete explorer setting for %s: %v", p.Provider, p.ContextName, err)
-			}
 		}
 
 		p.Logger.Infof("[%s] successfully deleted cluster %s", p.Provider, p.Name)
