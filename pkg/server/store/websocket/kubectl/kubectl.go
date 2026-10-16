@@ -6,12 +6,10 @@ package kubectl
 import (
 	"fmt"
 	"net/http"
-	"os/exec"
 	"strconv"
 	"time"
 
-	"github.com/orangedeng/autok3s/pkg/hosts"
-	"github.com/orangedeng/autok3s/pkg/hosts/dialer"
+	wssh "github.com/orangedeng/autok3s/pkg/server/store/websocket/ssh"
 
 	"github.com/gorilla/websocket"
 	"github.com/rancher/apiserver/pkg/apierror"
@@ -73,24 +71,25 @@ func ptyHandler(apiOp *types.APIRequest) error {
 		_ = c.Close()
 	}()
 
-	dialer, err := dialer.NewPtyShell(exec.CommandContext(apiOp.Request.Context(), "bash"))
+	// apiOp.Name is the kubectl context name, which is also the cluster ID.
+	// Connect to the first master node of that cluster and rely on the
+	// `k3s kubectl` subcommand that ships with every K3s installation, so no
+	// local kubectl binary is required.
+	dialer, err := wssh.NewMasterDialer(apiOp.Name, c)
 	if err != nil {
 		return err
 	}
-	wsDialer := hosts.NewWebSocketDialer(c, dialer)
+	defer dialer.Close()
 
-	err = wsDialer.Terminal(rows, columns)
-	if err != nil {
+	if err := dialer.Terminal(rows, columns); err != nil {
 		return err
 	}
 
-	aliasCmd := fmt.Sprintf("alias kubectl='kubectl --context %s'\n", apiOp.Name)
-	aliasCmd = fmt.Sprintf("%salias k='kubectl --context %s'\n", aliasCmd, apiOp.Name)
+	aliasCmd := "alias kubectl='k3s kubectl'\nalias k='k3s kubectl'\n"
 
-	err = wsDialer.Write([]byte(aliasCmd))
-	if err != nil {
+	if err := dialer.Write([]byte(aliasCmd)); err != nil {
 		return err
 	}
 
-	return wsDialer.ReadMessage(apiOp.Context())
+	return dialer.ReadMessage(apiOp.Context())
 }

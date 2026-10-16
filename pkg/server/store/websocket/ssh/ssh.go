@@ -71,7 +71,7 @@ func handler(apiOp *types.APIRequest) error {
 		_ = c.Close()
 	}()
 
-	dialer, err := newDialer(id, node, c)
+	dialer, err := NewDialer(id, node, c)
 	if err != nil {
 		return err
 	}
@@ -85,7 +85,8 @@ func handler(apiOp *types.APIRequest) error {
 	return dialer.ReadMessage(apiOp.Context())
 }
 
-func newDialer(id, node string, conn *websocket.Conn) (*hosts.WebSocketDialer, error) {
+// NewDialer returns a websocket dialer connected to the given node of the cluster.
+func NewDialer(id, node string, conn *websocket.Conn) (*hosts.WebSocketDialer, error) {
 	// get exist cluster's state from database.
 	state, err := common.DefaultDB.GetClusterByID(id)
 	if err != nil {
@@ -108,30 +109,55 @@ func newDialer(id, node string, conn *websocket.Conn) (*hosts.WebSocketDialer, e
 	}
 	allNodes = append(allNodes, nodes...)
 
-	var wsDialer *hosts.WebSocketDialer
-
 	// find the matching node and open dialer.
 	for _, n := range allNodes {
 		if n.InstanceID == node {
-			if state.Provider == "k3d" {
-				dialer, err := dialer.NewDockerShell(&n)
-				if err != nil {
-					return nil, err
-				}
-				wsDialer = hosts.NewWebSocketDialer(conn, dialer)
-				return wsDialer, nil
-			}
-			dialer, err := dialer.NewSSHDialer(&n, true, common.NewLogger(nil))
-			if err != nil {
-				return nil, err
-			}
-			shell, err := dialer.OpenShell()
-			if err != nil {
-				return nil, err
-			}
-			wsDialer = hosts.NewWebSocketDialer(conn, shell)
-			return wsDialer, nil
+			return newNodeDialer(state, n, conn)
 		}
 	}
 	return nil, apierror.NewAPIError(validation.NotFound, fmt.Sprintf("node %s is not found for cluster [%s]", node, id))
+}
+
+// NewMasterDialer returns a websocket dialer connected to the first master
+// node of the cluster.
+func NewMasterDialer(id string, conn *websocket.Conn) (*hosts.WebSocketDialer, error) {
+	// get exist cluster's state from database.
+	state, err := common.DefaultDB.GetClusterByID(id)
+	if err != nil {
+		return nil, err
+	}
+	if state == nil {
+		return nil, fmt.Errorf("cluster %s is not exist", id)
+	}
+
+	masters := make([]autok3stypes.Node, 0)
+	if err := json.Unmarshal(state.MasterNodes, &masters); err != nil {
+		return nil, err
+	}
+	if len(masters) == 0 {
+		return nil, fmt.Errorf("cluster %s has no master node", id)
+	}
+
+	return newNodeDialer(state, masters[0], conn)
+}
+
+// newNodeDialer opens the proper dialer for the node based on the provider.
+func newNodeDialer(state *common.ClusterState, n autok3stypes.Node, conn *websocket.Conn) (*hosts.WebSocketDialer, error) {
+	if state.Provider == "k3d" {
+		dockerShell, err := dialer.NewDockerShell(&n)
+		if err != nil {
+			return nil, err
+		}
+		return hosts.NewWebSocketDialer(conn, dockerShell), nil
+	}
+
+	sshDialer, err := dialer.NewSSHDialer(&n, true, common.NewLogger(nil))
+	if err != nil {
+		return nil, err
+	}
+	shell, err := sshDialer.OpenShell()
+	if err != nil {
+		return nil, err
+	}
+	return hosts.NewWebSocketDialer(conn, shell), nil
 }
