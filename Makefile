@@ -23,6 +23,7 @@ help:
 	#   -          lint, l  :  verify code via `golangci-lint`,
 	#                          roll back to `go fmt` and `go vet` if the installation fails.
 	#   -         build, b  :  compile code.
+	#   -             ui  :  build the bundled web ui into pkg/server/ui/static.
 	#   -       package, p  :  package docker image.
 	#   -          unit, u  :  run unit tests.
 	#   -        verify, v  :  run integration tests.

@@ -32,28 +32,6 @@ function mod() {
   popd >/dev/null || return
 }
 
-function ui() {
-  if [[ "${AUTOK3S_SKIP_UI:-}" == "true" ]]; then
-    autok3s::log::info "skipping autok3s ui build (AUTOK3S_SKIP_UI=true)"
-    if [[ ! -d pkg/server/ui/static ]]; then
-      autok3s::log::fatal "pkg/server/ui/static is missing, remove AUTOK3S_SKIP_UI to build the ui first"
-    fi
-    return 0
-  fi
-  autok3s::log::info "building autok3s ui from source (ui/)..."
-  if ! command -v npm >/dev/null 2>&1; then
-    autok3s::log::fatal "npm is required to build the bundled ui"
-  fi
-  rm -rf pkg/server/ui/static
-  pushd ui >/dev/null || return
-  npm ci --no-audit --no-fund || npm install --no-audit --no-fund
-  npm run build
-  rm -rf ../pkg/server/ui/static
-  mv dist/static ../pkg/server/ui/static
-  popd >/dev/null || return
-  autok3s::log::info "autok3s ui build done"
-}
-
 function go_generate() {
   autok3s::log::info "running go generate..."
   go generate -x
@@ -81,7 +59,7 @@ function build() {
   # and build preparation. The go build below waits for it before compiling,
   # as the ui assets are embedded via go:embed.
   autok3s::log::info "building autok3s ui in background..."
-  ui &
+  autok3s::ui::build &
   local ui_pid=$!
 
   go_generate
