@@ -3,16 +3,13 @@ package main
 
 import (
 	"os"
-	"path/filepath"
 
 	"github.com/orangedeng/autok3s/cmd"
 	"github.com/orangedeng/autok3s/cmd/addon"
 	"github.com/orangedeng/autok3s/cmd/airgap"
 	"github.com/orangedeng/autok3s/cmd/sshkey"
-	"github.com/orangedeng/autok3s/pkg/cli/kubectl"
 	"github.com/orangedeng/autok3s/pkg/common"
 
-	"github.com/docker/docker/pkg/reexec"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -24,18 +21,7 @@ var (
 	buildDate    string
 )
 
-func init() {
-	reexec.Register("kubectl", kubectl.Main)
-}
-
 func main() {
-	args := os.Args[0]
-	os.Args[0] = filepath.Base(os.Args[0])
-	if reexec.Init() {
-		return
-	}
-	os.Args[0] = args
-
 	rootCmd := cmd.Command()
 	rootCmd.AddCommand(cmd.CompletionCommand(), cmd.VersionCommand(gitVersion, gitCommit, gitTreeState, buildDate),
 		cmd.ListCommand(), cmd.CreateCommand(), cmd.JoinCommand(), cmd.KubectlCommand(), cmd.DeleteCommand(),
