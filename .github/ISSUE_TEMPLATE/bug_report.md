@@ -25,7 +25,10 @@ If applicable, add screenshots to help explain your problem.
 
 **Environments (please complete the following information):**
  - OS: [e.g. Darwin Bigsur]
- - AutoK3s Version [e.g. v0.4.0]
+ - AutoK3s Version [e.g. v0.9.3]
+ - Installation method: [binary from Releases / Docker image / built from source]
+ - Provider: [aws / google / alibaba / tencent / k3d / native]
+ - CLI or Web UI: [e.g. `autok3s -d create ...` or serve ui]
 
 **Additional context**
 Add any other context about the problem here.

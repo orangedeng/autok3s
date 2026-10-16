@@ -2,7 +2,7 @@
 
 ## 概述
 
-本文介绍了如何在 AWS EC2 中创建和初始化 K3s 集群，以及为已有的 K3s 集群添加节点的操作步骤。除此之外，本文还提供了在 AWS EC2 上运行 AutoK3s 的进阶操作指导，如配置私有镜像仓库、启用 AWS CCM 和启用 UI 组件。
+本文介绍了如何在 AWS EC2 中创建和初始化 K3s 集群，以及为已有的 K3s 集群添加节点的操作步骤。除此之外，本文还提供了在 AWS EC2 上运行 AutoK3s 的进阶操作指导，如配置私有镜像仓库、启用 AWS CCM 和启用内置 add-on。
 
 ## 前置要求
 
@@ -180,7 +180,7 @@ K3s 参数配置项主要对 K3s 集群进行设置，例如是否部署 HA 模�
 
 #### 高级选项
 
-配置要开启的 UI 组件（kube-explorer），以及是否部署 AWS Cloud Provider。
+配置要开启的内置 add-on（如 rancher），以及是否部署 AWS Cloud Provider。
 
 ![](../../../assets/aws/custom-create-cluster-additional.png)
 
@@ -188,7 +188,7 @@ K3s 参数配置项主要对 K3s 集群进行设置，例如是否部署 HA 模�
 
 | 参数 | 说明 | 默认值
 | :------------- | :------------------- |:------------- 
-| UI | 开启的 UI 组件（kube-explorer） |
+| UI | 开启的内置 add-on（如 rancher） |
 | Cloud Controller Manager | 是否部署 AWS Cloud Provider | false
 | IAM Instance Profile Control | 如果开启 CCM，需要配置control IAM，请参考[这里](https://github.com/kubernetes/cloud-provider-aws/blob/master/docs/prerequisites.md) |
 | IAM Instance Profile Worker | 如果开启 CCM，需要配置worker IAM，请参考[这里](https://github.com/kubernetes/cloud-provider-aws/blob/master/docs/prerequisites.md) |
@@ -259,41 +259,6 @@ K3s 参数配置项主要对 K3s 集群进行设置，例如是否部署 HA 模�
 
 ![](../../../assets/ssh-node.png)
 
-#### 开启 kube-explorer dashboard
-
-您可以在创建集群时，通过 Additional Options 选择 explorer 选项开启 kube-explorer 功能。
-
-![](../../../assets/launch-kube-explorer.png)
-
-也可以通过右侧下拉菜单中选择 Enable Explorer 功能来开启 kube-explorer。
-
-![](../../../assets/enable-kube-explorer.png)
-
-开启后，在集群列表会增加 Explorer 跳转链接按钮，点击跳转链接便可以访问 kube-explorer 页面了。
-
-![](../../../assets/access-kube-explorer.png)
-
-#### 关闭 kube-explorer dashboard
-
-对于已经开启了 kube-explorer 功能的集群，可以在右侧下拉菜单中选择 Disable Explorer 功能来关闭 kube-explorer 服务。
-
-![](../../../assets/disable-kube-explorer.png)
-
-#### 开启 helm-dashboard
-
-可以在 Settings > Feature Flags 选择 helm-dashboard 选项来开启 helm-dashboard 功能。
-
-![](../../../assets/enable-helm-dashboard.png)
-
-开启后，在集群列表会增加 Dashboard 跳转链接按钮，点击跳转链接便可以访问 helm-dashboard 页面了。
-
-![](../../../assets/access-to-helm-dashboard.png)
-
-#### 关闭 helm-dashboard
-
-可以在 Settings > Feature Flags 将已经开启的 helm-dashboard 关闭。
-
-![](../../../assets/enable-helm-dashboard.png)
 
 ## CLI 使用说明
 
@@ -543,14 +508,11 @@ autok3s -d create -p aws \
     --iam-instance-profile-worker <iam policy for node>
 ```
 
-#### 启用 UI 组件
+#### 内置 UI 组件
 
-可以通过 AutoK3s 开启 [kube-explorer](https://github.com/cnrancher/kube-explorer) 对 K3s 集群进行管理。
-
-```bash
-autok3s explorer --context <context> --port 9999
-```
-您可以通过 http://127.0.0.1:9999 访问 kube-explorer 页面。
+集群资源浏览（工作负载、日志、终端、执行命令等）已内置在
+`autok3s serve` 提供的 Web UI（`/ui/`）中，无需额外安装 kube-explorer
+等组件。
 
 ### 开启 helm-dashboard
 

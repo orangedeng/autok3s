@@ -122,40 +122,6 @@ K3d 配置主要配置的内容为启动 K3s 集群所需的参数，例如 K3s 
 
 ![](../../../assets/k3d/ssh-k3d.png)
 
-#### 开启 kube-explorer dashboard
-
-您可以通过右侧下拉菜单中选择 Enable Explorer 功能来开启 kube-explorer。
-
-![](../../../assets/enable-kube-explorer.png)
-
-开启后，在集群列表会增加 Explorer 跳转链接按钮，点击跳转链接便可以访问 kube-explorer dashboard 页面了。
-
-![](../../../assets/access-kube-explorer.png)
-
-#### 关闭 kube-explorer dashboard
-
-对于已经开启了 kube-explorer 功能的集群，可以在右侧下拉菜单中选择 Disable Explorer 功能来关闭 kube-explorer 服务。
-
-![](../../../assets/disable-kube-explorer.png)
-
-> 请注意：
-> - MacOS 下 Docker 不支持 Host Networking，如果在 MacOS 下使用 K3d provider，由于无法使用 Kubectl shell 功能操作 K3d 集群，所以我们无法使用 kube-explorer 功能。
-
-#### 开启 helm-dashboard
-
-可以在 Settings > Feature Flags 选择 helm-dashboard 选项来开启 helm-dashboard 功能。
-
-![](../../../assets/enable-helm-dashboard.png)
-
-开启后，在集群列表会增加 Dashboard 跳转链接按钮，点击跳转链接便可以访问 helm-dashboard 页面了。
-
-![](../../../assets/access-to-helm-dashboard.png)
-
-#### 关闭 helm-dashboard
-
-可以在 Settings > Feature Flags 将已经开启的 helm-dashboard 关闭。
-
-![](../../../assets/enable-helm-dashboard.png)
 
 ## CLI 使用说明
 
@@ -329,5 +295,5 @@ time="2023-05-25T02:54:23Z" level=info msg="[k3d] executing rollback logic..."
 
 如果出现以上问题，可以在启动 AutoK3s 容器时尝试将本地的 `.k3d` 目录挂载到 Docker 中，例如
 ```bash
-docker run -itd --restart=unless-stopped --net=host -v /var/run/docker.sock:/var/run/docker.sock -v /root/.config/k3d:/root/.config/k3d cnrancher/autok3s:v0.9.2
+docker run -itd --restart=unless-stopped --net=host -v /var/run/docker.sock:/var/run/docker.sock -v /root/.config/k3d:/root/.config/k3d orstar/autok3s:v0.9.3
 ```

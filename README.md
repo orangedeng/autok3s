@@ -82,7 +82,7 @@ rm -rf ~/.autok3s
 ## Demo Video
 
 In the demo, we install K3s by k3d provider in around 1 minute, and
-we can manage K3s clusters by kube-explorer dashboard.
+we can manage K3s clusters with the bundled web ui.
 
 Watch the demo:
 
