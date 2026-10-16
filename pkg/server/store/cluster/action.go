@@ -1,7 +1,6 @@
 package cluster
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -29,8 +28,6 @@ import (
 const (
 	actionJoin               = "join"
 	linkNodes                = "nodes"
-	actionEnableExplorer     = "enable-explorer"
-	actionDisableExplorer    = "disable-explorer"
 	actionDownloadKubeconfig = "download-kubeconfig"
 	actionUpgrade            = "upgrade"
 )
@@ -44,12 +41,9 @@ func Formatter(request *types.APIRequest, resource *types.RawResource) {
 // HandleCluster cluster's action handler.
 func HandleCluster() map[string]http.Handler {
 	kubeconfigAction := downloadKubeconfig{}
-	explorerAction := explorer{}
 	joinAction := join{}
 	return map[string]http.Handler{
 		actionJoin:               joinAction,
-		actionEnableExplorer:     explorerAction,
-		actionDisableExplorer:    explorerAction,
 		actionDownloadKubeconfig: kubeconfigAction,
 		actionUpgrade:            joinAction,
 	}
@@ -163,42 +157,6 @@ func nodesHandler(_ *types.APIRequest, schema *types.APISchema, id string) (type
 		ID:     id,
 		Object: c,
 	}, nil
-}
-
-type explorer struct{}
-
-func (e explorer) ServeHTTP(_ http.ResponseWriter, req *http.Request) {
-	apiRequest := types.GetAPIContext(req.Context())
-	clusterID := apiRequest.Name
-	if clusterID == "" {
-		apiRequest.WriteError(apierror.NewAPIError(validation.InvalidOption, "clusterID cannot be empty"))
-		return
-	}
-	action := apiRequest.Action
-	switch action {
-	case actionEnableExplorer:
-		err := common.EnableExplorer(context.Background(), clusterID)
-		if err != nil {
-			apiRequest.WriteError(apierror.NewAPIError(validation.ServerError, err.Error()))
-			return
-		}
-		socketName := common.GetSocketName(clusterID)
-		apiRequest.WriteResponse(http.StatusOK, types.APIObject{
-			Type: "enableExplorerOutput",
-			Object: &autok3stypes.EnableExplorerOutput{
-				Data: fmt.Sprintf("kube-explorer for cluster %s will listen on %s ...", clusterID, socketName),
-			},
-		})
-	case actionDisableExplorer:
-		err := common.DisableExplorer(clusterID)
-		if err != nil {
-			apiRequest.WriteError(apierror.NewAPIError(validation.ServerError, err.Error()))
-			return
-		}
-		apiRequest.WriteResponse(http.StatusOK, types.APIObject{})
-	default:
-		apiRequest.WriteError(apierror.NewAPIError(validation.ActionNotAvailable, fmt.Sprintf("invalid action %s", action)))
-	}
 }
 
 type downloadKubeconfig struct{}

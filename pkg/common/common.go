@@ -63,8 +63,8 @@ var (
 		Steps:    20,
 	}
 	// DefaultDB default database store.
-	DefaultDB         *Store
-	ExplorerWatchers  map[string]context.CancelFunc
+	DefaultDB *Store
+
 	DashboardCanceled context.CancelFunc
 
 	FileManager *ConfigFileManager

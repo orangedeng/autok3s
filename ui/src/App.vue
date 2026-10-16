@@ -13,7 +13,6 @@ import useSettingStore from '@/store/useSettingStore.js'
 import useProviderClusterStores from '@/store/useProviderClusterStores.js'
 import useTemplateStore from '@/store/useTemplateStore.js'
 // import useWindownManagerStore from '@/store/useWindowManagerStore.js'
-import useExplorerStore from '@/store/useExplorerStore.js'
 import useSshKeyStore from '@/store/useSshKeyStore.js'
 import useAddonStore from '@/store/useAddonStore.js'
 import useResourceChangeSocket from '@/composables/useResourceChangeSocket.js'
@@ -35,8 +34,6 @@ export default defineComponent({
     })
 
     // const wmStore = useWindownManagerStore()
-
-    const explorerStore = useExplorerStore()
 
     const { subscribe, connect } = useResourceChangeSocket()
     const clusterMessageHandler = useDebounceMessage(
@@ -72,7 +69,6 @@ export default defineComponent({
         'resource.remove': (cluster) => {
           const provider = cluster?.provider
           providerClusterStores[provider]?.remove(cluster?.id)
-          explorerStore.remove(cluster?.id)
         }
       })
     )
@@ -98,14 +94,6 @@ export default defineComponent({
         'resource.remove': (t) => {
           templateStore.remove(t?.id)
         }
-      })
-    )
-
-    const explorerMessageHandler = useDebounceMessage(
-      handleWebsocketMessage({
-        'resource.change': explorerStore.update,
-        'resource.create': explorerStore.add,
-        'resource.remove': explorerStore.remove
       })
     )
 
@@ -161,19 +149,6 @@ export default defineComponent({
         }
       },
       templateStore.loadData
-    )
-    subscribe(
-      'explorer',
-      (msg) => {
-        if (
-          msg.resourceType === 'explorer' &&
-          msg.name &&
-          ['resource.change', 'resource.create', 'resource.remove'].includes(msg.name)
-        ) {
-          explorerMessageHandler(msg)
-        }
-      },
-      explorerStore.loadData
     )
     subscribe(
       'package',

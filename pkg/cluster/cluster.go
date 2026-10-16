@@ -153,16 +153,6 @@ func (p *ProviderBase) InitK3sCluster(cluster *types.Cluster, deployCCM func() [
 		}
 	}
 
-	for plugin := range enabledPlugins {
-		if plugin == "explorer" {
-			// start kube-explorer
-			err := common.EnableExplorer(context.Background(), cluster.ContextName)
-			if err != nil {
-				p.Logger.Errorf("[%s] failed to start kube-explorer for cluster %s: %v", p.Provider, cluster.ContextName, err)
-			}
-		}
-	}
-
 	p.Logger.Infof("[%s] successfully deployed additional manifests", p.Provider)
 	p.Logger.Infof("[%s] successfully executed init k3s cluster logic", p.Provider)
 	return nil

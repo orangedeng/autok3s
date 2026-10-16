@@ -26,7 +26,6 @@ func Start() http.Handler {
 	initKubeconfig(s.Schemas)
 	initLogs(s.Schemas)
 	initTemplates(s.Schemas)
-	initExplorer(s.Schemas)
 	initSettings(s.Schemas)
 	initPackage(s.Schemas)
 	initSSHKey(s.Schemas)
@@ -64,7 +63,6 @@ func Start() http.Handler {
 	router.Handle("/debug/pprof/block", pprof.Handler("block"))
 	router.Handle("/debug/pprof/mutex", pprof.Handler("mutex"))
 
-	router.PathPrefix("/proxy/explorer/{name}").Handler(proxy.NewExplorerProxy())
 	router.PathPrefix("/meta/proxy").Handler(proxy.NewProxy("/proxy/"))
 	router.PathPrefix("/k8s/proxy").Handler(proxy.NewK8sProxy())
 	router.Path("/{prefix}/{type}").Queries("action", "{action}").Handler(s)

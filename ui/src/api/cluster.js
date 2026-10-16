@@ -55,21 +55,6 @@ export function fetchContextList() {
   })
 }
 
-export function disableExplorer(data) {
-  return request({
-    url: `/clusters/${data.id}?action=disable-explorer`,
-    method: 'post',
-    data
-  })
-}
-export function enableExplorer(data) {
-  return request({
-    url: `/clusters/${data.id}?action=enable-explorer`,
-    method: 'post',
-    data
-  })
-}
-
 export function fetchKubeconfig(data) {
   return request({
     url: `/clusters/${data.id}?action=download-kubeconfig`,
