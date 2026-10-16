@@ -94,7 +94,7 @@ func NewDockerShell(n *types.Node) (*DockerShell, error) {
 
 	if err := wait.ExponentialBackoff(common.Backoff, func() (bool, error) {
 		// create docker container exec.
-		exec, err := docker.ContainerExecCreate(d.ctx, container.ID, dockertypes.ExecConfig{
+		exec, err := docker.ContainerExecCreate(d.ctx, container.ID, containertypes.ExecOptions{
 			Privileged:   true,
 			Tty:          true,
 			AttachStdin:  true,
@@ -107,7 +107,7 @@ func NewDockerShell(n *types.Node) (*DockerShell, error) {
 		}
 
 		// attaches a connection to an exec process in the server.
-		execAttach, err := docker.ContainerExecAttach(d.ctx, exec.ID, dockertypes.ExecStartCheck{
+		execAttach, err := docker.ContainerExecAttach(d.ctx, exec.ID, containertypes.ExecStartOptions{
 			Tty: true,
 		})
 		if err != nil {

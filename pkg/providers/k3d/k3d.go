@@ -625,7 +625,7 @@ func (p *K3d) wrapCliFlags(masters, workers int) (*k3dconf.ClusterConfig, error)
 		if strings.HasSuffix(apiPort, ":0") {
 			apiPort = strings.TrimSuffix(apiPort, ":0") + ":random"
 		}
-		exposeAPI, err := k3dutil.ParsePortExposureSpec(apiPort, k3d.DefaultAPIPort)
+		exposeAPI, err := k3dutil.ParsePortExposureSpec(apiPort, k3d.DefaultAPIPort, false)
 		if err != nil {
 			return nil, fmt.Errorf("[%s] cluster %s parse port config failed: %w", p.GetProviderName(), p.Name, err)
 		}
@@ -801,7 +801,7 @@ func (p *K3d) wrapCliFlags(masters, workers int) (*k3dconf.ClusterConfig, error)
 		}
 	}
 
-	c, err := config.TransformSimpleToClusterConfig(context.Background(), runtimes.SelectedRuntime, cfg)
+	c, err := config.TransformSimpleToClusterConfig(context.Background(), runtimes.SelectedRuntime, cfg, "")
 	if err != nil {
 		return nil, fmt.Errorf("[%s] cluster %s transform simple config failed: %w", p.GetProviderName(), p.Name, err)
 	}
