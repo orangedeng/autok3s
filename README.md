@@ -44,10 +44,10 @@ Scenario 1 - Run with docker:
 ```bash
 # The commands will start autok3s daemon with an interactionable UI.
 # Standard Linux (Recommended)
-$ docker run -itd --restart=unless-stopped --net=host -v /var/run/docker.sock:/var/run/docker.sock orstar/autok3s:v0.9.3
+$ docker run -itd --restart=unless-stopped --net=host -v /var/run/docker.sock:/var/run/docker.sock orstar/autok3s:v0.10.0
 
 # MacOS
-$ docker run -itd --restart=unless-stopped -p 8080:8080 -v /var/run/docker.sock:/var/run/docker.sock -e DOCKER_HOST="" orstar/autok3s:v0.9.3
+$ docker run -itd --restart=unless-stopped -p 8080:8080 -v /var/run/docker.sock:/var/run/docker.sock -e DOCKER_HOST="" orstar/autok3s:v0.10.0
 ```
 
 Scenario 2 - Run with docker-compose
@@ -80,6 +80,11 @@ rm -rf ~/.autok3s
 ```
 
 ## Demo Video
+
+> **Versioning**: starting from `v0.10.0`, this project is maintained
+> as an independent upstream. Earlier releases were forked from
+> [cnrancher/autok3s](https://github.com/cnrancher/autok3s) (last
+> upstream release: v0.9.3).
 
 In the demo, we install K3s by k3d provider in around 1 minute, and
 we can manage K3s clusters with the bundled web ui.
