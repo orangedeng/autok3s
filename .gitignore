@@ -24,6 +24,7 @@ vendor/
 dist/
 bin/
 sha256sum*
+note.txt
 main
 
 .autok3s/
