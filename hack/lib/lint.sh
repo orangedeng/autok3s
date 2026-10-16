@@ -4,22 +4,37 @@
 # Lint variables helpers. These functions need the
 # following variables:
 #
-#    GOLANGCI_LINT_VERSION  -  The golangci-lint version, default is v1.31.0.
-#    DIRTY_CHECK            -  Specify to check the git tree is dirty or not.
+#    GOLANGCI_LINT_VERSION  -  The golangci-lint version, default is v2.5.0
+#                              (must be v2, the .golangci.yml config is v2-only).
 
 function autok3s::lint::install() {
-  local version=${GOLANGCI_LINT_VERSION:-"v1.38.0"}
-  curl -fL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$(go env GOPATH)/bin" "${version}"
+  local version=${GOLANGCI_LINT_VERSION:-"v2.5.0"}
+  if curl -fL --retry 3 https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh |
+    sh -s -- -b "$(go env GOPATH)/bin" "${version}"; then
+    return 0
+  fi
+  # fall back to go install when the install script is unreachable
+  GOBIN="$(go env GOPATH)/bin" go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${version}"
+}
+
+function autok3s::lint::binary() {
+  echo "$(go env GOPATH)/bin/golangci-lint"
 }
 
 function autok3s::lint::validate() {
-  if [[ -n "$(command -v golangci-lint)" ]]; then
+  local version=${GOLANGCI_LINT_VERSION:-"v2.5.0"}
+  local bin
+  bin=$(autok3s::lint::binary)
+
+  # The repo config (.golangci.yml) requires golangci-lint v2; ignore any
+  # v1 binary that may already exist in PATH.
+  if [[ -x "${bin}" ]] && ${bin} --version 2>/dev/null | grep -q "version ${version#v}"; then
     return 0
   fi
 
-  autok3s::log::info "installing golangci-lint"
+  autok3s::log::info "installing golangci-lint ${version}"
   if autok3s::lint::install; then
-    autok3s::log::info "$(golangci-lint --version)"
+    autok3s::log::info "$(${bin} --version)"
     return 0
   fi
   return 1
@@ -32,9 +47,11 @@ function autok3s::lint::lint() {
     fi
   fi
 
+  local bin
+  bin=$(autok3s::lint::binary)
   if autok3s::lint::validate; then
     for path in "$@"; do
-      golangci-lint -v run "${path}"
+      "${bin}" -v run "${path}"
     done
   else
     autok3s::log::warn "no golangci-lint available, using go fmt/vet instead"
