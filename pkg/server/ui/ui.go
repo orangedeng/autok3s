@@ -12,6 +12,8 @@ import (
 
 const (
 	localUI        = "./static"
+	repoUI         = "pkg/server/ui/static"
+	embedUI        = "static"
 	uiDefaultIndex = "http://localhost:5173"
 )
 
@@ -34,7 +36,7 @@ func (f fsFunc) Open(name string) (fs.File, error) {
 
 // Serve serve ui component.
 func Serve() http.Handler {
-	if uiMode() == "dev" {
+	if uiMode() == "dev" && !localUIAvailable() {
 		return http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
 			_ = serveIndex(writer)
 		})
@@ -44,7 +46,7 @@ func Serve() http.Handler {
 
 // ServeNotFound server ui component, not found will be return index.html.
 func ServeNotFound(next http.Handler) http.Handler {
-	if uiMode() == "dev" {
+	if uiMode() == "dev" && !localUIAvailable() {
 		return http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
 			_ = serveIndex(writer)
 		})
@@ -63,10 +65,24 @@ func ServeJavascript(next http.Handler) http.Handler {
 	})
 }
 
+// assetsFS returns the filesystem backing the ui assets. Prod builds use
+// the embedded assets; dev builds fall back to the local ./static directory
+// (populated by building the ui in ui/) when it exists.
+func assetsFS() fs.FS {
+	if uiMode() == "dev" && localUIAvailable() {
+		return os.DirFS(localUIDir())
+	}
+	sub, err := fs.Sub(assets, embedUI)
+	if err != nil {
+		return assets
+	}
+	return sub
+}
+
 func serveAsset() http.Handler {
 	handler := fsFunc(func(name string) (fs.File, error) {
-		assetPath := path.Join(localUI, name)
-		file, err := assets.Open(assetPath)
+		assetPath := name
+		file, err := assetsFS().Open(assetPath)
 		if err != nil {
 			return nil, err
 		}
@@ -79,9 +95,13 @@ func serveAsset() http.Handler {
 func serveAssetNotFound(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		p := strings.TrimPrefix(req.URL.Path, "/ui/")
-		_, err := assets.Open(path.Join(localUI, p))
+		_, err := assetsFS().Open(p)
 		if err != nil && os.IsNotExist(err) {
-			f, _ := assets.Open(path.Join(localUI, "index.html"))
+			f, err := assetsFS().Open("index.html")
+			if err != nil {
+				http.NotFound(rw, req)
+				return
+			}
 			_, _ = io.Copy(rw, f)
 			_ = f.Close()
 			return
@@ -103,6 +123,28 @@ func serveIndex(resp io.Writer) error {
 
 	_, err = io.Copy(resp, r.Body)
 	return err
+}
+
+// localUIAvailable reports whether locally built ui assets exist on disk,
+// so that non-prod builds can serve them without a vite dev server. It
+// checks both the working directory (./static) and the repository layout
+// (pkg/server/ui/static, populated by `make autok3s build` / `npm run
+// build` in ui/) to support running from either location.
+func localUIAvailable() bool {
+	_, err := os.Stat(path.Join(localUI, "index.html"))
+	if err == nil {
+		return true
+	}
+	_, err = os.Stat(path.Join(repoUI, "index.html"))
+	return err == nil
+}
+
+// localUIDir returns the directory containing the locally built ui assets.
+func localUIDir() string {
+	if _, err := os.Stat(path.Join(localUI, "index.html")); err == nil {
+		return localUI
+	}
+	return repoUI
 }
 
 func uiMode() string {
