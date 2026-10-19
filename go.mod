@@ -3,6 +3,7 @@ module github.com/orangedeng/autok3s
 go 1.26.3
 
 replace (
+	github.com/aws/aws-sdk-go-v2/service/ec2 => ./thirdparty/ec2
 	go4.org/unsafe/assume-no-moving-gc => go4.org/unsafe/assume-no-moving-gc v0.0.0-20230525183740-e7c30c78aeb2
 	inet.af/netaddr => inet.af/netaddr v0.0.0-20230525184311-b8eac61e914a
 )
