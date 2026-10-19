@@ -41,7 +41,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.11.1
-	github.com/tencentcloud/tencentcloud-sdk-go v1.0.34
+	github.com/tencentcloud/tencentcloud-sdk-go v3.0.233+incompatible
 	golang.org/x/crypto v0.51.0
 	golang.org/x/net v0.55.0
 	golang.org/x/oauth2 v0.36.0
