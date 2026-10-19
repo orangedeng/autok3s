@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"strings"
 
-	k3dutil "github.com/k3d-io/k3d/v5/cmd/util"
 	"github.com/orangedeng/autok3s/pkg/settings"
+	"github.com/orangedeng/autok3s/pkg/utils"
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/client-go/tools/clientcmd"
@@ -112,7 +112,7 @@ func enableDashboard(ctx context.Context) {
 	}
 	dashboardPort := settings.HelmDashboardPort.Get()
 	if dashboardPort == "" {
-		freePort, err := k3dutil.GetFreePort()
+		freePort, err := utils.GetFreePort()
 		if err != nil {
 			logrus.Errorf("failed to get free port for helm-dashboard: %v", err)
 			return

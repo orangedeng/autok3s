@@ -4,9 +4,9 @@ import (
 	"path/filepath"
 	"strconv"
 
-	k3dutil "github.com/k3d-io/k3d/v5/cmd/util"
 	"github.com/orangedeng/autok3s/pkg/common"
 	"github.com/orangedeng/autok3s/pkg/settings"
+	"github.com/orangedeng/autok3s/pkg/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -44,7 +44,7 @@ func DashboardCommand() *cobra.Command {
 			logrus.Fatalln(err)
 		}
 		if dashboardPort == 0 {
-			port, err := k3dutil.GetFreePort()
+			port, err := utils.GetFreePort()
 			if err != nil {
 				logrus.Fatalf("failed to get free port for helm-dashboard: %v", err)
 			}
