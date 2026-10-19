@@ -2,6 +2,7 @@ package aws
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -11,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/orangedeng/autok3s/pkg/cluster"
 	"github.com/orangedeng/autok3s/pkg/common"
@@ -21,11 +23,9 @@ import (
 	"github.com/orangedeng/autok3s/pkg/utils"
 
 	"github.com/Masterminds/semver"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/sirupsen/logrus"
 )
 
@@ -77,7 +77,7 @@ var (
 type Amazon struct {
 	*cluster.ProviderBase `json:",inline"`
 	typesaws.Options      `json:",inline"`
-	client                *ec2.EC2
+	client                *ec2.Client
 }
 
 func init() {
@@ -189,8 +189,8 @@ func (p *Amazon) IsClusterExist() (bool, []string, error) {
 	}
 
 	for _, instance := range output {
-		if aws.StringValue(instance.State.Name) != ec2.InstanceStateNameTerminated &&
-			aws.StringValue(instance.State.Name) != ec2.InstanceStateNameShuttingDown {
+		if instance.State.Name != ec2types.InstanceStateNameTerminated &&
+			instance.State.Name != ec2types.InstanceStateNameShuttingDown {
 			ids = append(ids, *instance.InstanceId)
 		}
 	}
@@ -327,7 +327,7 @@ func (p *Amazon) generateInstance(ssh *types.SSH) (*types.Cluster, error) {
 		p.Logger.Infof("[%s] %d of worker instances created successfully", p.GetProviderName(), workerNum)
 	}
 
-	if err := p.getInstanceStatus(ec2.InstanceStateNameRunning); err != nil {
+	if err := p.getInstanceStatus(string(ec2types.InstanceStateNameRunning)); err != nil {
 		return nil, err
 	}
 
@@ -353,11 +353,20 @@ func (p *Amazon) generateInstance(ssh *types.SSH) (*types.Cluster, error) {
 }
 
 func (p *Amazon) newClient() {
-	config := aws.NewConfig()
-	config = config.WithRegion(p.Region)
-	config = config.WithCredentials(credentials.NewStaticCredentials(p.AccessKey, p.SecretKey, p.SessionToken))
-	sess := session.Must(session.NewSession(config))
-	p.client = ec2.New(sess)
+	// static credentials only, so the aws-sdk-go-v2/config default chain
+	// (SSO/OIDC/STS/IMDS) is deliberately not linked in.
+	cfg := aws.Config{
+		Region: p.Region,
+		Credentials: aws.CredentialsProviderFunc(
+			func(context.Context) (aws.Credentials, error) {
+				return aws.Credentials{
+					AccessKeyID:     p.AccessKey,
+					SecretAccessKey: p.SecretKey,
+					SessionToken:    p.SessionToken,
+				}, nil
+			}),
+	}
+	p.client = ec2.NewFromConfig(cfg)
 }
 
 func (p *Amazon) runInstances(num int, master bool, ssh *types.SSH) error {
@@ -365,8 +374,8 @@ func (p *Amazon) runInstances(num int, master bool, ssh *types.SSH) error {
 	if err != nil {
 		return fmt.Errorf("[%s] --root-size is invalid %v, must be integer: %v", p.GetProviderName(), p.RootSize, err)
 	}
-	img, err := p.client.DescribeImages(&ec2.DescribeImagesInput{
-		ImageIds: aws.StringSlice([]string{p.AMI}),
+	img, err := p.client.DescribeImages(context.TODO(), &ec2.DescribeImagesInput{
+		ImageIds: stringSlice([]string{p.AMI}),
 	})
 	if err != nil {
 		return fmt.Errorf("[%s] AMI %s is invalid: %v", p.GetProviderName(), p.AMI, err)
@@ -376,58 +385,58 @@ func (p *Amazon) runInstances(num int, master bool, ssh *types.SSH) error {
 	if len(img.Images) > 0 {
 		deviceName = img.Images[0].RootDeviceName
 	}
-	bdm := &ec2.BlockDeviceMapping{
+	bdm := ec2types.BlockDeviceMapping{
 		DeviceName: deviceName,
-		Ebs: &ec2.EbsBlockDevice{
-			VolumeSize:          aws.Int64(rootSize),
-			VolumeType:          aws.String(p.VolumeType),
+		Ebs: &ec2types.EbsBlockDevice{
+			VolumeSize:          int32Ptr(rootSize),
+			VolumeType:          ec2types.VolumeType(p.VolumeType),
 			DeleteOnTermination: aws.Bool(true),
 		},
 	}
-	netSpecs := []*ec2.InstanceNetworkInterfaceSpecification{{
-		DeviceIndex:              aws.Int64(0), // eth0
-		Groups:                   aws.StringSlice([]string{p.SecurityGroup}),
+	netSpecs := []ec2types.InstanceNetworkInterfaceSpecification{{
+		DeviceIndex:              int32Ptr(0), // eth0
+		Groups:                   stringSlice([]string{p.SecurityGroup}),
 		SubnetId:                 &p.SubnetID,
 		AssociatePublicIpAddress: aws.Bool(true),
 	}}
 
-	var iamProfile *ec2.IamInstanceProfileSpecification
+	var iamProfile *ec2types.IamInstanceProfileSpecification
 	if master {
-		iamProfile = &ec2.IamInstanceProfileSpecification{
+		iamProfile = &ec2types.IamInstanceProfileSpecification{
 			Name: &p.IamInstanceProfileForControl,
 		}
 	} else {
-		iamProfile = &ec2.IamInstanceProfileSpecification{
+		iamProfile = &ec2types.IamInstanceProfileSpecification{
 			Name: &p.IamInstanceProfileForWorker,
 		}
 	}
 
 	input := &ec2.RunInstancesInput{
 		ImageId:  &p.AMI,
-		MinCount: aws.Int64(int64(num)),
-		MaxCount: aws.Int64(int64(num)),
-		Placement: &ec2.Placement{
+		MinCount: int32Ptr(int64(num)),
+		MaxCount: int32Ptr(int64(num)),
+		Placement: &ec2types.Placement{
 			AvailabilityZone: &p.Zone,
 		},
 		KeyName:             &p.KeypairName,
-		InstanceType:        &p.InstanceType,
+		InstanceType:        ec2types.InstanceType(p.InstanceType),
 		NetworkInterfaces:   netSpecs,
 		IamInstanceProfile:  iamProfile,
-		BlockDeviceMappings: []*ec2.BlockDeviceMapping{bdm},
+		BlockDeviceMappings: []ec2types.BlockDeviceMapping{bdm},
 		UserData:            aws.String(p.UserDataContent),
 	}
 	if p.RequestSpotInstance {
-		input.InstanceMarketOptions = &ec2.InstanceMarketOptionsRequest{
-			MarketType: aws.String("spot"),
+		input.InstanceMarketOptions = &ec2types.InstanceMarketOptionsRequest{
+			MarketType: ec2types.MarketTypeSpot,
 		}
 		if p.SpotPrice != "" {
-			input.InstanceMarketOptions.SpotOptions = &ec2.SpotMarketOptions{
+			input.InstanceMarketOptions.SpotOptions = &ec2types.SpotMarketOptions{
 				MaxPrice: aws.String(p.SpotPrice),
 			}
 		}
 	}
 
-	inst, err := p.client.RunInstances(input)
+	inst, err := p.client.RunInstances(context.TODO(), input)
 
 	if err != nil || len(inst.Instances) != num {
 		return fmt.Errorf("[%s] calling runInstances error. region: %s, zone: %s, msg: [%v]",
@@ -435,23 +444,23 @@ func (p *Amazon) runInstances(num int, master bool, ssh *types.SSH) error {
 	}
 	instanceList := inst.Instances
 
-	ids := make([]*string, 0)
+	ids := make([]string, 0)
 	for _, ins := range instanceList {
-		ids = append(ids, ins.InstanceId)
-		p.M.Store(aws.StringValue(ins.InstanceId),
+		ids = append(ids, aws.ToString(ins.InstanceId))
+		p.M.Store(aws.ToString(ins.InstanceId),
 			types.Node{Master: master,
 				Current:        true,
 				RollBack:       true,
-				InstanceID:     aws.StringValue(ins.InstanceId),
-				InstanceStatus: aws.StringValue(ins.State.Name),
+				InstanceID:     aws.ToString(ins.InstanceId),
+				InstanceStatus: string(ins.State.Name),
 				SSH:            *ssh})
 	}
 
 	return p.setInstanceTags(master, ids, p.Tags)
 }
 
-func (p *Amazon) setInstanceTags(master bool, instanceIDs []*string, additionalTags []string) error {
-	tags := []*ec2.Tag{
+func (p *Amazon) setInstanceTags(master bool, instanceIDs []string, additionalTags []string) error {
+	tags := []ec2types.Tag{
 		{
 			Key:   aws.String("autok3s"),
 			Value: aws.String("true"),
@@ -471,32 +480,32 @@ func (p *Amazon) setInstanceTags(master bool, instanceIDs []*string, additionalT
 		if len(ss) != 2 {
 			return fmt.Errorf("tags %s invalid", v)
 		}
-		tags = append(tags, &ec2.Tag{
+		tags = append(tags, ec2types.Tag{
 			Key:   aws.String(ss[0]),
 			Value: aws.String(ss[1]),
 		})
 	}
 
 	if master {
-		tags = append(tags, &ec2.Tag{
+		tags = append(tags, ec2types.Tag{
 			Key:   aws.String("Name"),
 			Value: aws.String(fmt.Sprintf(common.MasterInstanceName, p.ContextName)),
 		})
 	} else {
-		tags = append(tags, &ec2.Tag{
+		tags = append(tags, ec2types.Tag{
 			Key:   aws.String("Name"),
 			Value: aws.String(fmt.Sprintf(common.WorkerInstanceName, p.ContextName)),
 		})
 	}
 
 	if p.CloudControllerManager {
-		tags = append(tags, &ec2.Tag{
+		tags = append(tags, ec2types.Tag{
 			Key:   aws.String(fmt.Sprintf("kubernetes.io/cluster/%s", p.ContextName)),
 			Value: aws.String("owned"),
 		})
 	}
 
-	_, err := p.client.CreateTags(&ec2.CreateTagsInput{
+	_, err := p.client.CreateTags(context.TODO(), &ec2.CreateTagsInput{
 		Resources: instanceIDs,
 		Tags:      tags,
 	})
@@ -512,29 +521,30 @@ func (p *Amazon) getInstanceStatus(aimStatus string) error {
 
 	if len(ids) > 0 {
 		p.Logger.Infof("[%s] waiting for the instances %s to be in `%s` status...", p.GetProviderName(), ids, aimStatus)
-		err := p.client.WaitUntilInstanceRunning(&ec2.DescribeInstancesInput{
-			InstanceIds: aws.StringSlice(ids),
-		})
+		waiter := ec2.NewInstanceRunningWaiter(p.client)
+		err := waiter.Wait(context.TODO(), &ec2.DescribeInstancesInput{
+			InstanceIds: stringSlice(ids),
+		}, 15*time.Minute)
 		if err != nil {
 			return err
 		}
 
-		instances, err := p.client.DescribeInstances(&ec2.DescribeInstancesInput{
-			InstanceIds: aws.StringSlice(ids),
+		instances, err := p.client.DescribeInstances(context.TODO(), &ec2.DescribeInstancesInput{
+			InstanceIds: stringSlice(ids),
 		})
 		if err != nil {
 			return err
 		}
 		for _, reservation := range instances.Reservations {
 			for _, status := range reservation.Instances {
-				if aws.StringValue(status.State.Name) == aimStatus {
-					if value, ok := p.M.Load(aws.StringValue(status.InstanceId)); ok {
+				if string(status.State.Name) == aimStatus {
+					if value, ok := p.M.Load(aws.ToString(status.InstanceId)); ok {
 						v := value.(types.Node)
 						v.InstanceStatus = aimStatus
-						v.InternalIPAddress = []string{aws.StringValue(status.PrivateIpAddress)}
-						v.PublicIPAddress = []string{aws.StringValue(status.PublicIpAddress)}
-						v.LocalHostname = aws.StringValue(status.PrivateDnsName)
-						p.M.Store(aws.StringValue(status.InstanceId), v)
+						v.InternalIPAddress = []string{aws.ToString(status.PrivateIpAddress)}
+						v.PublicIPAddress = []string{aws.ToString(status.PublicIpAddress)}
+						v.LocalHostname = aws.ToString(status.PrivateDnsName)
+						p.M.Store(aws.ToString(status.InstanceId), v)
 					}
 					continue
 				}
@@ -557,7 +567,7 @@ func (p *Amazon) getInstanceNodes() ([]types.Node, error) {
 	}
 	nodes := make([]types.Node, 0)
 	for _, instance := range output {
-		if aws.StringValue(instance.State.Name) == ec2.InstanceStateNameTerminated {
+		if instance.State.Name == ec2types.InstanceStateNameTerminated {
 			continue
 		}
 		master := false
@@ -570,10 +580,10 @@ func (p *Amazon) getInstanceNodes() ([]types.Node, error) {
 		nodes = append(nodes, types.Node{
 			Master:            master,
 			RollBack:          false,
-			InstanceID:        aws.StringValue(instance.InstanceId),
-			InstanceStatus:    aws.StringValue(instance.State.Name),
-			InternalIPAddress: []string{aws.StringValue(instance.PrivateIpAddress)},
-			PublicIPAddress:   []string{aws.StringValue(instance.PublicIpAddress)}})
+			InstanceID:        aws.ToString(instance.InstanceId),
+			InstanceStatus:    string(instance.State.Name),
+			InternalIPAddress: []string{aws.ToString(instance.PrivateIpAddress)},
+			PublicIPAddress:   []string{aws.ToString(instance.PublicIpAddress)}})
 	}
 	return nodes, nil
 }
@@ -584,14 +594,14 @@ func (p *Amazon) syncInstances() error {
 		return fmt.Errorf("[%s] there's no instance for cluster %s: %v", p.GetProviderName(), p.Name, err)
 	}
 	for _, instance := range output {
-		if aws.StringValue(instance.State.Name) == ec2.InstanceStateNameTerminated {
+		if instance.State.Name == ec2types.InstanceStateNameTerminated {
 			continue
 		}
-		if value, ok := p.M.Load(aws.StringValue(instance.InstanceId)); ok {
+		if value, ok := p.M.Load(aws.ToString(instance.InstanceId)); ok {
 			v := value.(types.Node)
-			v.InternalIPAddress = []string{aws.StringValue(instance.PrivateIpAddress)}
-			v.PublicIPAddress = []string{aws.StringValue(instance.PublicIpAddress)}
-			p.M.Store(aws.StringValue(instance.InstanceId), v)
+			v.InternalIPAddress = []string{aws.ToString(instance.PrivateIpAddress)}
+			v.PublicIPAddress = []string{aws.ToString(instance.PublicIpAddress)}
+			p.M.Store(aws.ToString(instance.InstanceId), v)
 			continue
 		}
 		master := false
@@ -601,40 +611,40 @@ func (p *Amazon) syncInstances() error {
 				break
 			}
 		}
-		p.M.Store(aws.StringValue(instance.InstanceId), types.Node{
+		p.M.Store(aws.ToString(instance.InstanceId), types.Node{
 			Master:            master,
 			RollBack:          false,
 			Current:           false,
-			InstanceID:        aws.StringValue(instance.InstanceId),
-			InstanceStatus:    aws.StringValue(instance.State.Name),
-			InternalIPAddress: []string{aws.StringValue(instance.PrivateIpAddress)},
-			PublicIPAddress:   []string{aws.StringValue(instance.PublicIpAddress)}})
+			InstanceID:        aws.ToString(instance.InstanceId),
+			InstanceStatus:    string(instance.State.Name),
+			InternalIPAddress: []string{aws.ToString(instance.PrivateIpAddress)},
+			PublicIPAddress:   []string{aws.ToString(instance.PublicIpAddress)}})
 	}
 	return nil
 }
 
-func (p *Amazon) describeInstances() ([]*ec2.Instance, error) {
+func (p *Amazon) describeInstances() ([]ec2types.Instance, error) {
 	describeInput := &ec2.DescribeInstancesInput{
-		Filters: []*ec2.Filter{
+		Filters: []ec2types.Filter{
 			{
 				Name:   aws.String("tag:autok3s"),
-				Values: aws.StringSlice([]string{"true"}),
+				Values: stringSlice([]string{"true"}),
 			},
 			{
 				Name:   aws.String("tag:cluster"),
-				Values: aws.StringSlice([]string{common.TagClusterPrefix + p.ContextName}),
+				Values: stringSlice([]string{common.TagClusterPrefix + p.ContextName}),
 			},
 		},
-		MaxResults: aws.Int64(int64(50)),
+		MaxResults: int32Ptr(int64(50)),
 	}
 
-	instanceList := make([]*ec2.Instance, 0)
+	instanceList := make([]ec2types.Instance, 0)
 	for {
-		output, err := p.client.DescribeInstances(describeInput)
+		output, err := p.client.DescribeInstances(context.TODO(), describeInput)
 		if output == nil || err != nil {
-			if ae, ok := err.(awserr.Error); ok {
-				if ae.Code() == "AuthFailure" {
-					return nil, fmt.Errorf("[%s] invalid credential: %s", p.GetProviderName(), ae.Message())
+			if ae, ok := asAPIError(err); ok {
+				if ae.ErrorCode() == "AuthFailure" {
+					return nil, fmt.Errorf("[%s] invalid credential: %s", p.GetProviderName(), ae.ErrorMessage())
 				}
 			}
 			return nil, fmt.Errorf("[%s] failed to get instance for cluster %s: %v", p.GetProviderName(), p.ContextName, err)
@@ -645,7 +655,7 @@ func (p *Amazon) describeInstances() ([]*ec2.Instance, error) {
 				instanceList = append(instanceList, reservation.Instances...)
 			}
 		}
-		if aws.StringValue(output.NextToken) == "" {
+		if aws.ToString(output.NextToken) == "" {
 			break
 		}
 		describeInput.NextToken = output.NextToken
@@ -684,13 +694,13 @@ func (p *Amazon) CreateCheck() error {
 
 	// check key pair.
 	if p.KeypairName != "" {
-		_, err = p.client.DescribeKeyPairs(&ec2.DescribeKeyPairsInput{
-			KeyNames: []*string{&p.KeypairName},
+		_, err = p.client.DescribeKeyPairs(context.TODO(), &ec2.DescribeKeyPairsInput{
+			KeyNames: []string{p.KeypairName},
 		})
 		if err != nil {
-			if ae, ok := err.(awserr.Error); ok {
-				if ae.Code() == "AuthFailure" {
-					return fmt.Errorf("[%s] invalid credential: %s", p.GetProviderName(), ae.Message())
+			if ae, ok := asAPIError(err); ok {
+				if ae.ErrorCode() == "AuthFailure" {
+					return fmt.Errorf("[%s] invalid credential: %s", p.GetProviderName(), ae.ErrorMessage())
 				}
 			}
 			return fmt.Errorf("[%s] failed to get keypair by name %s, got error: %v", p.GetProviderName(), p.KeypairName, err)
@@ -711,14 +721,14 @@ func (p *Amazon) CreateCheck() error {
 
 	if p.SubnetID != "" && p.VpcID != "" {
 		// check subnet is belongs to vpc.
-		subnetFilter := []*ec2.Filter{
+		subnetFilter := []ec2types.Filter{
 			{
 				Name:   aws.String("subnet-id"),
-				Values: []*string{&p.SubnetID},
+				Values: []string{p.SubnetID},
 			},
 		}
 
-		subnets, err := p.client.DescribeSubnets(&ec2.DescribeSubnetsInput{
+		subnets, err := p.client.DescribeSubnets(context.TODO(), &ec2.DescribeSubnetsInput{
 			Filters: subnetFilter,
 		})
 		if err != nil {
@@ -729,24 +739,24 @@ func (p *Amazon) CreateCheck() error {
 			return fmt.Errorf("[%s] there's not subnet found by id %s", p.GetProviderName(), p.SubnetID)
 		}
 
-		if *subnets.Subnets[0].VpcId != p.VpcID {
+		if aws.ToString(subnets.Subnets[0].VpcId) != p.VpcID {
 			return fmt.Errorf("[%s] subnetId %s does not belong to VpcId: %s", p.GetProviderName(), p.SubnetID, p.VpcID)
 		}
 	}
 
 	if p.SubnetID == "" {
-		filters := []*ec2.Filter{
+		filters := []ec2types.Filter{
 			{
 				Name:   aws.String("availability-zone"),
-				Values: []*string{&p.Zone},
+				Values: []string{p.Zone},
 			},
 			{
 				Name:   aws.String("vpc-id"),
-				Values: []*string{&p.VpcID},
+				Values: []string{p.VpcID},
 			},
 		}
 
-		subnets, err := p.client.DescribeSubnets(&ec2.DescribeSubnetsInput{
+		subnets, err := p.client.DescribeSubnets(context.TODO(), &ec2.DescribeSubnetsInput{
 			Filters: filters,
 		})
 		if err != nil {
@@ -826,12 +836,12 @@ func (p *Amazon) createKeyPair(ssh *types.SSH) error {
 			if pk != nil {
 				keyName := p.ContextName
 				p.Logger.Infof("[%s] creating key pair %s...", p.GetProviderName(), keyName)
-				_, err = p.client.ImportKeyPair(&ec2.ImportKeyPairInput{
+				_, err = p.client.ImportKeyPair(context.TODO(), &ec2.ImportKeyPairInput{
 					KeyName:           &keyName,
 					PublicKeyMaterial: pk,
 				})
 				if err != nil {
-					if ae, ok := err.(awserr.Error); ok && strings.EqualFold(ae.Code(), "InvalidKeyPair.Duplicate") {
+					if ae, ok := asAPIError(err); ok && strings.EqualFold(ae.ErrorCode(), "InvalidKeyPair.Duplicate") {
 						// atomicity preservation:
 						//   1. delete id_rsa & id_rsa.pub.
 						//   2. reset cluster's ssh-key-path'.
@@ -854,19 +864,19 @@ func (p *Amazon) createKeyPair(ssh *types.SSH) error {
 }
 
 func (p *Amazon) getDefaultVPCId() (string, error) {
-	output, err := p.client.DescribeAccountAttributes(&ec2.DescribeAccountAttributesInput{})
+	output, err := p.client.DescribeAccountAttributes(context.TODO(), &ec2.DescribeAccountAttributesInput{})
 	if err != nil {
-		if ae, ok := err.(awserr.Error); ok {
-			if ae.Code() == "AuthFailure" {
-				return "", fmt.Errorf("[%s] invalid credential: %s", p.GetProviderName(), ae.Message())
+		if ae, ok := asAPIError(err); ok {
+			if ae.ErrorCode() == "AuthFailure" {
+				return "", fmt.Errorf("[%s] invalid credential: %s", p.GetProviderName(), ae.ErrorMessage())
 			}
 		}
 		return "", err
 	}
 
 	for _, attribute := range output.AccountAttributes {
-		if aws.StringValue(attribute.AttributeName) == "default-vpc" {
-			value := aws.StringValue(attribute.AttributeValues[0].AttributeValue)
+		if aws.ToString(attribute.AttributeName) == "default-vpc" {
+			value := aws.ToString(attribute.AttributeValues[0].AttributeValue)
 			if value == "none" {
 				return "", errors.New("there's 'none' for default vpc")
 			}
@@ -880,37 +890,39 @@ func (p *Amazon) getDefaultVPCId() (string, error) {
 func (p *Amazon) configSecurityGroup() error {
 	p.Logger.Infof("[%s] config default security group for %s in region %s", p.GetProviderName(), p.VpcID, p.Region)
 
-	filters := []*ec2.Filter{
+	filters := []ec2types.Filter{
 		{
 			Name:   aws.String("group-name"),
-			Values: aws.StringSlice([]string{defaultSecurityGroupName}),
+			Values: stringSlice([]string{defaultSecurityGroupName}),
 		},
 		{
 			Name:   aws.String("vpc-id"),
-			Values: aws.StringSlice([]string{p.VpcID}),
+			Values: stringSlice([]string{p.VpcID}),
 		},
 	}
-	groups, err := p.client.DescribeSecurityGroups(&ec2.DescribeSecurityGroupsInput{
+	groups, err := p.client.DescribeSecurityGroups(context.TODO(), &ec2.DescribeSecurityGroupsInput{
 		Filters: filters,
 	})
 	if err != nil {
-		if ae, ok := err.(awserr.Error); ok {
-			if ae.Code() == "AuthFailure" {
-				return fmt.Errorf("[%s] invalid credential: %s", p.GetProviderName(), ae.Message())
+		if ae, ok := asAPIError(err); ok {
+			if ae.ErrorCode() == "AuthFailure" {
+				return fmt.Errorf("[%s] invalid credential: %s", p.GetProviderName(), ae.ErrorMessage())
 			}
 		}
 		return err
 	}
 
-	var securityGroup *ec2.SecurityGroup
+	var securityGroup ec2types.SecurityGroup
+	securityGroupFound := false
 	if len(groups.SecurityGroups) > 0 {
 		// get default security group.
 		securityGroup = groups.SecurityGroups[0]
+		securityGroupFound = true
 	}
 
-	if securityGroup == nil {
+	if !securityGroupFound {
 		p.Logger.Infof("creating security group (%s) in %s", defaultSecurityGroupName, p.VpcID)
-		groupResp, err := p.client.CreateSecurityGroup(&ec2.CreateSecurityGroupInput{
+		groupResp, err := p.client.CreateSecurityGroup(context.TODO(), &ec2.CreateSecurityGroupInput{
 			GroupName:   aws.String(defaultSecurityGroupName),
 			Description: aws.String("default security group generated by autok3s"),
 			VpcId:       aws.String(p.VpcID),
@@ -919,7 +931,7 @@ func (p *Amazon) configSecurityGroup() error {
 			return err
 		}
 		// Manually translate into the security group construct.
-		securityGroup = &ec2.SecurityGroup{
+		securityGroup = ec2types.SecurityGroup{
 			GroupId:   groupResp.GroupId,
 			VpcId:     aws.String(p.VpcID),
 			GroupName: aws.String(defaultSecurityGroupName),
@@ -937,11 +949,11 @@ func (p *Amazon) configSecurityGroup() error {
 			return err
 		}
 	}
-	p.SecurityGroup = aws.StringValue(securityGroup.GroupId)
+	p.SecurityGroup = aws.ToString(securityGroup.GroupId)
 	permissionList := p.configPermission(securityGroup)
 	if len(permissionList) != 0 {
 		p.Logger.Infof("authorizing group %s with permissions: %v", defaultSecurityGroupName, permissionList)
-		_, err := p.client.AuthorizeSecurityGroupIngress(&ec2.AuthorizeSecurityGroupIngressInput{
+		_, err := p.client.AuthorizeSecurityGroupIngress(context.TODO(), &ec2.AuthorizeSecurityGroupIngressInput{
 			GroupId:       securityGroup.GroupId,
 			IpPermissions: permissionList,
 		})
@@ -952,18 +964,21 @@ func (p *Amazon) configSecurityGroup() error {
 	return nil
 }
 
-func (p *Amazon) getSecurityGroup(id *string) (*ec2.SecurityGroup, error) {
-	securityGroups, err := p.client.DescribeSecurityGroups(&ec2.DescribeSecurityGroupsInput{
-		GroupIds: []*string{id},
+func (p *Amazon) getSecurityGroup(id *string) (*ec2types.SecurityGroup, error) {
+	securityGroups, err := p.client.DescribeSecurityGroups(context.TODO(), &ec2.DescribeSecurityGroupsInput{
+		GroupIds: []string{aws.ToString(id)},
 	})
 	if err != nil {
 		return nil, err
 	}
-	return securityGroups.SecurityGroups[0], nil
+	if len(securityGroups.SecurityGroups) == 0 {
+		return nil, fmt.Errorf("[%s] security group %s not found", p.GetProviderName(), aws.ToString(id))
+	}
+	return &securityGroups.SecurityGroups[0], nil
 }
 
-func (p *Amazon) configPermission(group *ec2.SecurityGroup) []*ec2.IpPermission {
-	perms := make([]*ec2.IpPermission, 0)
+func (p *Amazon) configPermission(group ec2types.SecurityGroup) []ec2types.IpPermission {
+	perms := make([]ec2types.IpPermission, 0)
 	hasPorts := make(map[string]bool)
 	for _, p := range group.IpPermissions {
 		if p.FromPort != nil {
@@ -972,40 +987,40 @@ func (p *Amazon) configPermission(group *ec2.SecurityGroup) []*ec2.IpPermission 
 	}
 
 	if !hasPorts["22/tcp"] {
-		perms = append(perms, &ec2.IpPermission{
+		perms = append(perms, ec2types.IpPermission{
 			IpProtocol: aws.String("tcp"),
-			FromPort:   aws.Int64(int64(22)),
-			ToPort:     aws.Int64(int64(22)),
-			IpRanges:   []*ec2.IpRange{{CidrIp: aws.String(ipRange)}},
+			FromPort:   int32Ptr(int64(22)),
+			ToPort:     int32Ptr(int64(22)),
+			IpRanges:   []ec2types.IpRange{{CidrIp: aws.String(ipRange)}},
 		})
 	}
 
 	if !hasPorts["6443/tcp"] {
-		perms = append(perms, &ec2.IpPermission{
+		perms = append(perms, ec2types.IpPermission{
 			IpProtocol: aws.String("tcp"),
-			FromPort:   aws.Int64(int64(6443)),
-			ToPort:     aws.Int64(int64(6443)),
-			IpRanges:   []*ec2.IpRange{{CidrIp: aws.String(ipRange)}},
+			FromPort:   int32Ptr(int64(6443)),
+			ToPort:     int32Ptr(int64(6443)),
+			IpRanges:   []ec2types.IpRange{{CidrIp: aws.String(ipRange)}},
 		})
 	}
 
 	if !hasPorts["10250/tcp"] {
-		perms = append(perms, &ec2.IpPermission{
+		perms = append(perms, ec2types.IpPermission{
 			IpProtocol: aws.String("tcp"),
-			FromPort:   aws.Int64(int64(10250)),
-			ToPort:     aws.Int64(int64(10250)),
-			IpRanges:   []*ec2.IpRange{{CidrIp: aws.String(ipRange)}},
+			FromPort:   int32Ptr(int64(10250)),
+			ToPort:     int32Ptr(int64(10250)),
+			IpRanges:   []ec2types.IpRange{{CidrIp: aws.String(ipRange)}},
 		})
 	}
 
 	if (p.Network == "" || p.Network == "vxlan") && !hasPorts["8472/udp"] {
 		if !hasPorts["8472/udp"] {
 			// udp 8472 for flannel vxlan.
-			perms = append(perms, &ec2.IpPermission{
+			perms = append(perms, ec2types.IpPermission{
 				IpProtocol: aws.String("udp"),
-				FromPort:   aws.Int64(int64(8472)),
-				ToPort:     aws.Int64(int64(8472)),
-				IpRanges:   []*ec2.IpRange{{CidrIp: aws.String(ipRange)}},
+				FromPort:   int32Ptr(int64(8472)),
+				ToPort:     int32Ptr(int64(8472)),
+				IpRanges:   []ec2types.IpRange{{CidrIp: aws.String(ipRange)}},
 			})
 		}
 	}
@@ -1016,17 +1031,17 @@ func (p *Amazon) configPermission(group *ec2.SecurityGroup) []*ec2.IpPermission 
 			p.Logger.Errorf("[%s] failed to get subnet cidr with id %s, error: %v", p.GetProviderName(), p.SubnetID, err)
 			cidr = ipRange
 		}
-		perms = append(perms, &ec2.IpPermission{
+		perms = append(perms, ec2types.IpPermission{
 			IpProtocol: aws.String("tcp"),
-			FromPort:   aws.Int64(int64(2379)),
-			ToPort:     aws.Int64(int64(2379)),
-			IpRanges:   []*ec2.IpRange{{CidrIp: aws.String(cidr)}},
+			FromPort:   int32Ptr(int64(2379)),
+			ToPort:     int32Ptr(int64(2379)),
+			IpRanges:   []ec2types.IpRange{{CidrIp: aws.String(cidr)}},
 		})
-		perms = append(perms, &ec2.IpPermission{
+		perms = append(perms, ec2types.IpPermission{
 			IpProtocol: aws.String("tcp"),
-			FromPort:   aws.Int64(int64(2380)),
-			ToPort:     aws.Int64(int64(2380)),
-			IpRanges:   []*ec2.IpRange{{CidrIp: aws.String(cidr)}},
+			FromPort:   int32Ptr(int64(2380)),
+			ToPort:     int32Ptr(int64(2380)),
+			IpRanges:   []ec2types.IpRange{{CidrIp: aws.String(cidr)}},
 		})
 	}
 
@@ -1060,14 +1075,14 @@ func (p *Amazon) deleteInstance(f bool) (string, error) {
 }
 
 func (p *Amazon) getSubnetCIDR() (string, error) {
-	subnetFilter := []*ec2.Filter{
+	subnetFilter := []ec2types.Filter{
 		{
 			Name:   aws.String("subnet-id"),
-			Values: []*string{&p.SubnetID},
+			Values: []string{p.SubnetID},
 		},
 	}
 
-	subnets, err := p.client.DescribeSubnets(&ec2.DescribeSubnetsInput{
+	subnets, err := p.client.DescribeSubnets(context.TODO(), &ec2.DescribeSubnetsInput{
 		Filters: subnetFilter,
 	})
 	if err != nil {
@@ -1078,24 +1093,24 @@ func (p *Amazon) getSubnetCIDR() (string, error) {
 		return "", fmt.Errorf("[%s] there's not subnet found by id %s", p.GetProviderName(), p.SubnetID)
 	}
 
-	return aws.StringValue(subnets.Subnets[0].CidrBlock), nil
+	return aws.ToString(subnets.Subnets[0].CidrBlock), nil
 }
 
 func (p *Amazon) addTagsForCCMResource() error {
 	// get security group
-	result, err := p.client.DescribeSecurityGroups(&ec2.DescribeSecurityGroupsInput{
-		GroupIds: aws.StringSlice([]string{p.SecurityGroup}),
+	result, err := p.client.DescribeSecurityGroups(context.TODO(), &ec2.DescribeSecurityGroupsInput{
+		GroupIds: stringSlice([]string{p.SecurityGroup}),
 	})
 	if err != nil || result == nil || len(result.SecurityGroups) == 0 {
 		return fmt.Errorf("[%s] failed to get security group %s with error: %v", p.GetProviderName(), p.SecurityGroup, err)
 	}
 	tags := result.SecurityGroups[0].Tags
-	tags = append(tags, &ec2.Tag{
+	tags = append(tags, ec2types.Tag{
 		Key:   aws.String(fmt.Sprintf("kubernetes.io/cluster/%s", p.ContextName)),
 		Value: aws.String("shared"),
 	})
-	_, err = p.client.CreateTags(&ec2.CreateTagsInput{
-		Resources: aws.StringSlice([]string{p.SecurityGroup}),
+	_, err = p.client.CreateTags(context.TODO(), &ec2.CreateTagsInput{
+		Resources: stringSlice([]string{p.SecurityGroup}),
 		Tags:      tags,
 	})
 	if err != nil {
@@ -1103,25 +1118,25 @@ func (p *Amazon) addTagsForCCMResource() error {
 	}
 
 	// get subnet.
-	subnetFilter := []*ec2.Filter{
+	subnetFilter := []ec2types.Filter{
 		{
 			Name:   aws.String("subnet-id"),
-			Values: []*string{&p.SubnetID},
+			Values: []string{p.SubnetID},
 		},
 	}
-	subnets, err := p.client.DescribeSubnets(&ec2.DescribeSubnetsInput{
+	subnets, err := p.client.DescribeSubnets(context.TODO(), &ec2.DescribeSubnetsInput{
 		Filters: subnetFilter,
 	})
 	if err != nil || subnets == nil || len(subnets.Subnets) == 0 {
 		return fmt.Errorf("[%s] failed to get subnets %s, error: %v", p.GetProviderName(), p.SubnetID, err)
 	}
 	subnetTags := subnets.Subnets[0].Tags
-	subnetTags = append(subnetTags, &ec2.Tag{
+	subnetTags = append(subnetTags, ec2types.Tag{
 		Key:   aws.String(fmt.Sprintf("kubernetes.io/cluster/%s", p.ContextName)),
 		Value: aws.String("shared"),
 	})
-	_, err = p.client.CreateTags(&ec2.CreateTagsInput{
-		Resources: aws.StringSlice([]string{p.SubnetID}),
+	_, err = p.client.CreateTags(context.TODO(), &ec2.CreateTagsInput{
+		Resources: stringSlice([]string{p.SubnetID}),
 		Tags:      subnetTags,
 	})
 
@@ -1129,21 +1144,21 @@ func (p *Amazon) addTagsForCCMResource() error {
 }
 
 func (p *Amazon) removeTagsForCCMResource() error {
-	deletedTags := []*ec2.Tag{
+	deletedTags := []ec2types.Tag{
 		{
 			Key:   aws.String(fmt.Sprintf("kubernetes.io/cluster/%s", p.ContextName)),
 			Value: aws.String("shared"),
 		},
 	}
-	_, err := p.client.DeleteTags(&ec2.DeleteTagsInput{
-		Resources: aws.StringSlice([]string{p.SecurityGroup}),
+	_, err := p.client.DeleteTags(context.TODO(), &ec2.DeleteTagsInput{
+		Resources: stringSlice([]string{p.SecurityGroup}),
 		Tags:      deletedTags,
 	})
 	if err != nil {
 		return err
 	}
-	_, err = p.client.DeleteTags(&ec2.DeleteTagsInput{
-		Resources: aws.StringSlice([]string{p.SubnetID}),
+	_, err = p.client.DeleteTags(context.TODO(), &ec2.DeleteTagsInput{
+		Resources: stringSlice([]string{p.SubnetID}),
 		Tags:      deletedTags,
 	})
 	return err
@@ -1151,7 +1166,7 @@ func (p *Amazon) removeTagsForCCMResource() error {
 
 func (p *Amazon) terminateInstance(ids []string) error {
 	if len(ids) > 0 {
-		tags := []*ec2.Tag{
+		tags := []ec2types.Tag{
 			{
 				Key:   aws.String("autok3s"),
 				Value: aws.String("true"),
@@ -1161,17 +1176,19 @@ func (p *Amazon) terminateInstance(ids []string) error {
 				Value: aws.String(common.TagClusterPrefix + p.ContextName),
 			},
 		}
-		tagInput := &ec2.DeleteTagsInput{}
-		tagInput.SetTags(tags)
-		tagInput.SetResources(aws.StringSlice(ids))
-		_, err := p.client.DeleteTags(tagInput)
+		tagInput := &ec2.DeleteTagsInput{
+			Tags:      tags,
+			Resources: stringSlice(ids),
+		}
+		_, err := p.client.DeleteTags(context.TODO(), tagInput)
 		if err != nil {
 			return err
 		}
 		p.Logger.Infof("[%s] terminate instance %v", p.GetProviderName(), ids)
-		input := &ec2.TerminateInstancesInput{}
-		input.SetInstanceIds(aws.StringSlice(ids))
-		_, err = p.client.TerminateInstances(input)
+		input := &ec2.TerminateInstancesInput{
+			InstanceIds: stringSlice(ids),
+		}
+		_, err = p.client.TerminateInstances(context.TODO(), input)
 		if err != nil {
 			return err
 		}
@@ -1186,7 +1203,7 @@ func (p *Amazon) terminateInstance(ids []string) error {
 }
 
 func (p *Amazon) isInstanceRunning(state string) bool {
-	return state == ec2.InstanceStateNameRunning
+	return state == string(ec2types.InstanceStateNameRunning)
 }
 
 func getAWSCCMManifest(k3sversion, cidr string) string {
