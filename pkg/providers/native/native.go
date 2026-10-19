@@ -91,7 +91,7 @@ func (p *Native) CreateK3sCluster() (err error) {
 		p.SSHKeyPath = defaultSSHKeyPath
 	}
 
-	return p.InitCluster(p.Options, p.GenerateManifest, p.assembleNodeStatus, nil, p.rollbackInstance)
+	return p.InitCluster(p.Options, p.GenerateManifest, p.assembleNodeStatus, nil, p.rollbackInstance, p.GenerateMasterExtraArgs, p.GenerateWorkerExtraArgs)
 }
 
 // JoinK3sNode join K3S node.
@@ -125,7 +125,7 @@ func (p *Native) JoinK3sNode() (err error) {
 
 	return p.JoinNodes(func(_ *types.SSH) (*types.Cluster, error) {
 		return c, nil
-	}, p.syncNodes, false, p.rollbackInstance)
+	}, p.syncNodes, false, p.rollbackInstance, p.GenerateMasterExtraArgs, p.GenerateWorkerExtraArgs)
 }
 
 func (p *Native) rollbackInstance(ids []string) error {

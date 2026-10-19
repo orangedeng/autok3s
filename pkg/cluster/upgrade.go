@@ -106,6 +106,9 @@ func (p *ProviderBase) Upgrade(cluster *types.Cluster) error {
 		defer os.RemoveAll(pkg.FilePath)
 	}
 
+	// Upgrade is entered through the providers.Provider interface, whose
+	// fixed signature cannot carry the extra args generators, so the
+	// concrete provider is looked up by name here.
 	provider, err := providers.GetProvider(p.Provider)
 	if err != nil {
 		return err

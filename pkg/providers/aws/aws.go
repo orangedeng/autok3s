@@ -123,7 +123,7 @@ func (p *Amazon) CreateK3sCluster() (err error) {
 	if p.SSHUser == "" {
 		p.SSHUser = defaultUser
 	}
-	return p.InitCluster(p.Options, p.GenerateManifest, p.generateInstance, nil, p.rollbackInstance)
+	return p.InitCluster(p.Options, p.GenerateManifest, p.generateInstance, nil, p.rollbackInstance, p.GenerateMasterExtraArgs, p.GenerateWorkerExtraArgs)
 }
 
 // UpgradeK3sCluster AWS Customized k3s upgrade
@@ -157,7 +157,7 @@ func (p *Amazon) JoinK3sNode() (err error) {
 	if p.SSHUser == "" {
 		p.SSHUser = defaultUser
 	}
-	return p.JoinNodes(p.generateInstance, p.syncInstances, false, p.rollbackInstance)
+	return p.JoinNodes(p.generateInstance, p.syncInstances, false, p.rollbackInstance, p.GenerateMasterExtraArgs, p.GenerateWorkerExtraArgs)
 }
 
 // DeleteK3sCluster delete K3S cluster.

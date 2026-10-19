@@ -82,12 +82,12 @@ func (p *K3d) GenerateClusterName() string {
 
 // CreateK3sCluster create K3S cluster.
 func (p *K3d) CreateK3sCluster() (err error) {
-	return p.InitCluster(p.Options, nil, p.createK3d, p.obtainKubeCfg, p.rollbackK3d)
+	return p.InitCluster(p.Options, nil, p.createK3d, p.obtainKubeCfg, p.rollbackK3d, p.GenerateMasterExtraArgs, p.GenerateWorkerExtraArgs)
 }
 
 // JoinK3sNode join K3S node.
 func (p *K3d) JoinK3sNode() (err error) {
-	return p.JoinNodes(p.joinK3d, p.syncK3d, true, p.rollbackK3d)
+	return p.JoinNodes(p.joinK3d, p.syncK3d, true, p.rollbackK3d, p.GenerateMasterExtraArgs, p.GenerateWorkerExtraArgs)
 }
 
 // DeleteK3sCluster delete K3S cluster.

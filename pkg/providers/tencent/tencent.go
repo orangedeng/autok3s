@@ -120,7 +120,7 @@ func (p *Tencent) CreateK3sCluster() (err error) {
 	if p.SSHUser == "" {
 		p.SSHUser = defaultUser
 	}
-	return p.InitCluster(p.Options, p.GenerateManifest, p.generateInstance, nil, p.rollbackInstance)
+	return p.InitCluster(p.Options, p.GenerateManifest, p.generateInstance, nil, p.rollbackInstance, p.GenerateMasterExtraArgs, p.GenerateWorkerExtraArgs)
 }
 
 // JoinK3sNode join K3S node.
@@ -129,7 +129,7 @@ func (p *Tencent) JoinK3sNode() (err error) {
 		p.SSHUser = defaultUser
 	}
 
-	return p.JoinNodes(p.generateInstance, func() error { return nil }, false, p.rollbackInstance)
+	return p.JoinNodes(p.generateInstance, func() error { return nil }, false, p.rollbackInstance, p.GenerateMasterExtraArgs, p.GenerateWorkerExtraArgs)
 }
 
 func (p *Tencent) rollbackInstance(ids []string) error {
