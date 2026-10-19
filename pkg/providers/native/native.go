@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/orangedeng/autok3s/pkg/cluster"
 	"github.com/orangedeng/autok3s/pkg/cluster/kube"
 	"github.com/orangedeng/autok3s/pkg/common"
 	"github.com/orangedeng/autok3s/pkg/k3s"
 	"github.com/orangedeng/autok3s/pkg/providers"
+	"github.com/orangedeng/autok3s/pkg/providers/base"
 	putil "github.com/orangedeng/autok3s/pkg/providers/utils"
 	"github.com/orangedeng/autok3s/pkg/types"
 	"github.com/orangedeng/autok3s/pkg/types/native"
@@ -37,8 +37,8 @@ var (
 
 // Native provider native struct.
 type Native struct {
-	*cluster.ProviderBase `json:",inline"`
-	native.Options        `json:",inline"`
+	*base.ProviderBase `json:",inline"`
+	native.Options     `json:",inline"`
 }
 
 func init() {
@@ -48,7 +48,7 @@ func init() {
 }
 
 func newProvider() *Native {
-	base := cluster.NewBaseProvider()
+	base := base.NewBaseProvider()
 	base.Provider = providerName
 	return &Native{
 		ProviderBase: base,

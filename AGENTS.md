@@ -23,10 +23,16 @@ Directories whose contents are not obvious from the name:
 cmd/             cobra commands; cmd.go blank-imports every provider package to
                  register its factory — a provider not imported here does not exist
 pkg/airgap/      air-gapped install support (download/distribute K3s artifacts)
-pkg/cluster/     K3s command and template generation shared by create/join/upgrade
+pkg/cluster/     cluster discovery for the UI/CLI list (ListClusters) plus kube/,
+                 the API server access layer (client, /readyz & /version probes,
+                 node description, kubeconfig persistence)
 pkg/common/      sqlite DB + models, logging, settings, bundled templates
+pkg/k3s/         pure assembly of the K3s install/join/restart/uninstall shell
+                 commands (no IO; table driven tests pin the behavior)
 pkg/providers/   cloud providers; provider.go defines the Provider interface and the
-                 factory registry (RegisterProvider / GetProvider)
+                 factory registry (RegisterProvider / GetProvider); base/ holds the
+                 lifecycle orchestration (create/join/delete/upgrade, flags, config
+                 merging) that every provider embeds
 pkg/server/      serve runtime: schema.go registers API schemas, store/ holds the
                  per-resource stores and websocket handlers, ui/ serves the web UI
 pkg/types/       shared flag/cluster/SSH types; types/apis are the API schema structs
@@ -105,8 +111,8 @@ deliberately and say in the PR what you checked:
 - Integration tests are ginkgo suites under `test/integration` and exercise the
   compiled binary; `test/e2e` is currently disabled in the make script.
 - No network and no real cloud credentials in unit tests — mock at the provider SDK
-  boundary (`pkg/cluster/commands_test.go` and `pkg/providers/aws/template_test.go`
-  show the pattern).
+  boundary (`pkg/k3s/command_test.go`, `pkg/cluster/kube` and
+  `pkg/providers/aws/template_test.go` show the pattern).
 - Add or update tests for any behavior change. A bug fix without a regression test
   is incomplete.
 

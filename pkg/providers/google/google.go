@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/orangedeng/autok3s/pkg/cluster"
 	"github.com/orangedeng/autok3s/pkg/common"
 	"github.com/orangedeng/autok3s/pkg/providers"
+	"github.com/orangedeng/autok3s/pkg/providers/base"
 	putil "github.com/orangedeng/autok3s/pkg/providers/utils"
 	"github.com/orangedeng/autok3s/pkg/types"
 	typesgoogle "github.com/orangedeng/autok3s/pkg/types/google"
@@ -40,10 +40,10 @@ const (
 
 // Google provider
 type Google struct {
-	*cluster.ProviderBase `json:",inline"`
-	typesgoogle.Options   `json:",inline"`
-	client                *raw.Service
-	globalURL             string
+	*base.ProviderBase  `json:",inline"`
+	typesgoogle.Options `json:",inline"`
+	client              *raw.Service
+	globalURL           string
 }
 
 func init() {
@@ -53,7 +53,7 @@ func init() {
 }
 
 func newProvider() *Google {
-	base := cluster.NewBaseProvider()
+	base := base.NewBaseProvider()
 	base.Provider = providerName
 	googleProvider := &Google{
 		ProviderBase: base,

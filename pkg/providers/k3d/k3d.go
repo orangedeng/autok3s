@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/orangedeng/autok3s/pkg/cluster"
 	"github.com/orangedeng/autok3s/pkg/hosts/dialer"
 	"github.com/orangedeng/autok3s/pkg/providers"
+	"github.com/orangedeng/autok3s/pkg/providers/base"
 	"github.com/orangedeng/autok3s/pkg/types"
 	typesk3d "github.com/orangedeng/autok3s/pkg/types/k3d"
 	"github.com/orangedeng/autok3s/pkg/utils"
@@ -43,8 +43,8 @@ var (
 
 // K3d provider k3d struct.
 type K3d struct {
-	*cluster.ProviderBase `json:",inline"`
-	typesk3d.Options      `json:",inline"`
+	*base.ProviderBase `json:",inline"`
+	typesk3d.Options   `json:",inline"`
 
 	dockerHost, additionalHost string
 }
@@ -56,7 +56,7 @@ func init() {
 }
 
 func newProvider() *K3d {
-	base := cluster.NewBaseProvider()
+	base := base.NewBaseProvider()
 	base.Provider = providerName
 	return &K3d{
 		ProviderBase: base,

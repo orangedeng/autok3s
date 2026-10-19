@@ -14,9 +14,9 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/orangedeng/autok3s/pkg/cluster"
 	"github.com/orangedeng/autok3s/pkg/common"
 	"github.com/orangedeng/autok3s/pkg/providers"
+	"github.com/orangedeng/autok3s/pkg/providers/base"
 	putil "github.com/orangedeng/autok3s/pkg/providers/utils"
 	"github.com/orangedeng/autok3s/pkg/types"
 	typesaws "github.com/orangedeng/autok3s/pkg/types/aws"
@@ -75,9 +75,9 @@ var (
 
 // Amazon provider amazon struct.
 type Amazon struct {
-	*cluster.ProviderBase `json:",inline"`
-	typesaws.Options      `json:",inline"`
-	client                *ec2.Client
+	*base.ProviderBase `json:",inline"`
+	typesaws.Options   `json:",inline"`
+	client             *ec2.Client
 }
 
 func init() {
@@ -87,7 +87,7 @@ func init() {
 }
 
 func newProvider() *Amazon {
-	base := cluster.NewBaseProvider()
+	base := base.NewBaseProvider()
 	base.Provider = providerName
 	amazonProvider := &Amazon{
 		ProviderBase: base,

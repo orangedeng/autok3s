@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/orangedeng/autok3s/pkg/cluster"
 	"github.com/orangedeng/autok3s/pkg/common"
 	"github.com/orangedeng/autok3s/pkg/hosts/dialer"
 	"github.com/orangedeng/autok3s/pkg/providers"
+	"github.com/orangedeng/autok3s/pkg/providers/base"
 	putil "github.com/orangedeng/autok3s/pkg/providers/utils"
 	"github.com/orangedeng/autok3s/pkg/types"
 	"github.com/orangedeng/autok3s/pkg/types/tencent"
@@ -54,8 +54,8 @@ var (
 
 // Tencent provider tencent struct.
 type Tencent struct {
-	*cluster.ProviderBase `json:",inline"`
-	tencent.Options       `json:",inline"`
+	*base.ProviderBase `json:",inline"`
+	tencent.Options    `json:",inline"`
 
 	c *cvm.Client
 	v *vpc.Client
@@ -71,7 +71,7 @@ func init() {
 }
 
 func newProvider() *Tencent {
-	base := cluster.NewBaseProvider()
+	base := base.NewBaseProvider()
 	base.Provider = providerName
 	base.InstallScript = k3sInstallScript
 	tencentProvider := &Tencent{
