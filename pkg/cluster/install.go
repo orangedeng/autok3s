@@ -1,14 +1,14 @@
 package cluster
 
 import (
-	"encoding/base64"
+	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
-	"time"
+
+	"encoding/base64"
+	"path/filepath"
 
 	"github.com/orangedeng/autok3s/pkg/airgap"
 	"github.com/orangedeng/autok3s/pkg/cluster/kube"
@@ -18,10 +18,7 @@ import (
 	"github.com/orangedeng/autok3s/pkg/providers"
 	"github.com/orangedeng/autok3s/pkg/types"
 	"github.com/orangedeng/autok3s/pkg/utils"
-
-	"github.com/pkg/errors"
 	"github.com/rancher/wharfie/pkg/registries"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -152,221 +149,6 @@ func (p *ProviderBase) InitK3sCluster(cluster *types.Cluster, deployCCM func() [
 	return nil
 }
 
-// Join join K3S nodes to exist K3S cluster.
-func (p *ProviderBase) Join(merged, added *types.Cluster) error {
-	p.Logger.Infof("[%s] executing join k3s node logic", merged.Provider)
-
-	provider, err := providers.GetProvider(merged.Provider)
-	if err != nil {
-		return err
-	}
-
-	pkg, err := airgap.PreparePackage(merged)
-	if err != nil {
-		return err
-	}
-	// package's name is empty, it means that it is a temporary dir and it needs to be remove after.
-	if pkg != nil && pkg.Name == "" {
-		defer os.RemoveAll(pkg.FilePath)
-	}
-
-	if merged.IP == "" {
-		if len(merged.MasterNodes) <= 0 || len(merged.MasterNodes[0].InternalIPAddress) <= 0 {
-			return errors.New("[cluster] master node internal ip address can not be empty")
-		}
-		merged.IP = merged.MasterNodes[0].InternalIPAddress[0]
-	}
-	publicIP := merged.IP
-
-	// get cluster token from `--ip` address.
-	if merged.Token == "" {
-		serverNode := types.Node{}
-		if len(added.MasterNodes) > 0 {
-			serverNode = added.MasterNodes[0]
-		} else {
-			serverNode = added.WorkerNodes[0]
-		}
-		serverNode.PublicIPAddress = []string{merged.IP}
-		token, err := p.execute(&serverNode, k3s.TokenCommand)
-		if err != nil {
-			return err
-		}
-		merged.Token = strings.TrimSpace(token)
-	}
-
-	if merged.Token == "" {
-		return errors.New("[cluster] k3s token can not be empty")
-	}
-
-	masterNodes := nodeByInstanceID(merged.MasterNodes)
-	workerNodes := nodeByInstanceID(merged.WorkerNodes)
-
-	for i := 0; i < len(added.Status.MasterNodes); i++ {
-		currentNode := added.MasterNodes[i]
-		full, ok := masterNodes[currentNode.InstanceID]
-		if !ok {
-			continue
-		}
-		extraArgs := merged.MasterExtraArgs
-		p.Logger.Infof("[%s] joining k3s master-%d...", merged.Provider, i+1)
-		additionalExtraArgs := provider.GenerateMasterExtraArgs(added, full)
-		if additionalExtraArgs != "" {
-			extraArgs += additionalExtraArgs
-		}
-		if err := p.initNode(false, publicIP, merged, full, extraArgs, pkg); err != nil {
-			return err
-		}
-		p.Logger.Infof("[%s] successfully joined k3s master-%d", merged.Provider, i+1)
-	}
-
-	var wg sync.WaitGroup
-	var l sync.RWMutex
-
-	for i := 0; i < len(added.Status.WorkerNodes); i++ {
-		currentNode := added.WorkerNodes[i]
-		full, ok := workerNodes[currentNode.InstanceID]
-		if !ok {
-			continue
-		}
-		wg.Add(1)
-
-		go func(i int, node types.Node) {
-			defer wg.Done()
-			p.Logger.Infof("[%s] joining k3s worker-%d...", merged.Provider, i+1)
-			extraArgs := merged.WorkerExtraArgs
-			additionalExtraArgs := provider.GenerateWorkerExtraArgs(added, full)
-			if additionalExtraArgs != "" {
-				extraArgs += additionalExtraArgs
-			}
-			if err := p.initNode(false, publicIP, merged, full, extraArgs, pkg); err != nil {
-				l.Lock()
-				p.ErrM[full.InstanceID] = err.Error()
-				l.Unlock()
-			}
-			p.Logger.Infof("[%s] successfully joined k3s worker-%d", merged.Provider, i+1)
-		}(i, full)
-	}
-	wg.Wait()
-
-	// sync master & worker numbers.
-	merged.Master = strconv.Itoa(len(merged.MasterNodes))
-	merged.Worker = strconv.Itoa(len(merged.WorkerNodes))
-
-	if p.Provider == "native" {
-		// check cluster context exists
-		kubeCfg := filepath.Join(common.CfgPath, common.KubeCfgFile)
-		clientConfig, err := clientcmd.LoadFromFile(kubeCfg)
-		if err != nil {
-			return err
-		}
-		contexts := clientConfig.Contexts
-		if _, ok := contexts[p.ContextName]; !ok {
-			// get k3s cluster config.
-			cfg, err := p.execute(&types.Node{
-				PublicIPAddress: []string{merged.IP},
-				SSH:             merged.SSH,
-				Master:          true,
-			}, k3s.CatConfigCommand)
-			if err == nil {
-				// merge current cluster to kube config.
-				if err := kube.SaveConfig(cfg, merged.IP, p.ContextName); err != nil {
-					p.Logger.Warnf("[%s] can't save kubeconfig file with error: %v", merged.Provider, err)
-				}
-				_ = os.Setenv(clientcmd.RecommendedConfigPathEnvVar, filepath.Join(common.CfgPath, common.KubeCfgFile))
-			} else {
-				p.Logger.Warnf("[%s] can't get kubeconfig file from master %s", merged.Provider, merged.IP)
-			}
-		}
-	}
-
-	merged.Status.Status = common.StatusRunning
-	// write current cluster to state file.
-	if err = common.DefaultDB.SaveCluster(merged); err != nil {
-		p.Logger.Errorf("failed to save cluster state: %v", err)
-		return nil
-	}
-
-	p.Logger.Infof("[%s] successfully executed join k3s node logic", merged.Provider)
-	return nil
-}
-
-// SSHK3sNode ssh to K3S node.
-func SSHK3sNode(ip string, cluster *types.Cluster, ssh *types.SSH) error {
-	var node types.Node
-
-	for _, n := range cluster.Status.MasterNodes {
-		if n.PublicIPAddress[0] == ip || n.InstanceID == ip {
-			node = n
-			break
-		}
-	}
-
-	for _, n := range cluster.Status.WorkerNodes {
-		if n.PublicIPAddress[0] == ip || n.InstanceID == ip {
-			node = n
-			break
-		}
-	}
-
-	if ssh.SSHUser != "" {
-		node.SSH.SSHUser = ssh.SSHUser
-	}
-	if ssh.SSHPort != "" {
-		node.SSH.SSHPort = ssh.SSHPort
-	}
-	if ssh.SSHPassword != "" {
-		node.SSH.SSHPassword = ssh.SSHPassword
-	}
-	if ssh.SSHKeyPath != "" {
-		node.SSH.SSHKeyPath = ssh.SSHKeyPath
-	}
-	if ssh.SSHCert != "" {
-		node.SSH.SSHCert = ssh.SSHCert
-	}
-	if ssh.SSHCertPath != "" {
-		node.SSH.SSHCertPath = ssh.SSHCertPath
-	}
-	if ssh.SSHKeyPassphrase != "" {
-		node.SSH.SSHKeyPassphrase = ssh.SSHKeyPassphrase
-	}
-	if ssh.SSHAgentAuth {
-		node.SSH.SSHAgentAuth = ssh.SSHAgentAuth
-	}
-	if node.PublicIPAddress == nil {
-		node.PublicIPAddress = []string{ip}
-	}
-
-	if node.SSH.SSHPort == "" {
-		node.SSH.SSHPort = "22"
-	}
-
-	// preCheck ssh config
-	if node.SSH.SSHUser == "" || (node.SSH.SSHPassword == "" && node.SSH.SSHKeyPath == "") {
-		return fmt.Errorf("couldn't ssh to chosen node with current ssh config: --ssh-user %s --ssh-port %s --ssh-password %s --ssh-key-path %s", node.SSH.SSHUser, node.SSH.SSHPort, node.SSH.SSHPassword, node.SSH.SSHKeyPath)
-	}
-
-	return terminal(&node)
-}
-
-// UninstallK3sNodes uninstall K3S on the given nodes.
-func (p *ProviderBase) UninstallK3sNodes(nodes []types.Node) (warnMsg []string) {
-	for _, node := range nodes {
-		if node.Master {
-			_, e := p.execute(&node, k3s.MasterUninstallCommand)
-			if e != nil {
-				warnMsg = append(warnMsg, fmt.Sprintf("failed to uninstall k3s on master node %s: %s", node.InstanceID, e.Error()))
-			}
-		} else {
-			_, e := p.execute(&node, k3s.WorkerUninstallCommand)
-			if e != nil {
-				warnMsg = append(warnMsg, fmt.Sprintf("failed to uninstall k3s on worker node %s: %s", node.InstanceID, e.Error()))
-			}
-		}
-	}
-
-	return
-}
-
 // DeployExtraManifest deploy extra K3S manifest.
 func (p *ProviderBase) DeployExtraManifest(cluster *types.Cluster, cmds []string) error {
 	if _, err := p.execute(&cluster.MasterNodes[0], []string{fmt.Sprintf("mkdir -p %s", common.K3sManifestsDir)}...); err != nil {
@@ -425,67 +207,6 @@ func (p *ProviderBase) initNode(isFirstMaster bool, fixedIP string, cluster *typ
 	}
 
 	return nil
-}
-
-func (p *ProviderBase) execute(n *types.Node, cmds ...string) (string, error) {
-	if len(cmds) <= 0 {
-		return "", nil
-	}
-
-	dialer, err := dialer.NewSSHDialer(n, true, p.Logger)
-	if err != nil {
-		return "", err
-	}
-
-	defer func() {
-		_ = dialer.Close()
-	}()
-	output, err := dialer.ExecuteCommands(cmds...)
-	if err != nil {
-		return "", fmt.Errorf("%w: %s", err, output)
-	}
-
-	return output, nil
-}
-
-func (p *ProviderBase) executeWithRetry(count int, n *types.Node, cmds ...string) (string, error) {
-	backoff := wait.Backoff{
-		Duration: 2 * time.Second,
-		Factor:   1,
-		Steps:    count,
-	}
-	var rtn string
-	var lastError error
-	err := wait.ExponentialBackoff(backoff, func() (bool, error) {
-		rtn, lastError = p.execute(n, cmds...)
-		if lastError != nil {
-			return false, nil
-		}
-		return true, nil
-	})
-	if err != nil {
-		return "", errors.Wrapf(lastError, "failed to execute cmd with max retry count %d", count)
-	}
-	return rtn, nil
-}
-
-func terminal(n *types.Node) error {
-	dialer, err := dialer.NewSSHDialer(n, true, common.NewLogger(nil))
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		_ = dialer.Close()
-	}()
-	shell, err := dialer.OpenShell()
-	if err != nil {
-		return err
-	}
-
-	shell.SetIO(os.Stdout, os.Stderr, os.Stdin)
-
-	return shell.Terminal()
 }
 
 func (p *ProviderBase) handleRegistry(n *types.Node, c *types.Cluster) (err error) {
@@ -637,96 +358,6 @@ func saveRegistryTLS(registry *registries.Registry, m map[string]map[string][]by
 	}
 
 	return cmd, nil
-}
-
-func (p *ProviderBase) Upgrade(cluster *types.Cluster) error {
-	p.Logger.Infof("[%s] executing upgrade k3s cluster logic...", p.Provider)
-	if len(cluster.MasterNodes) <= 0 || len(cluster.MasterNodes[0].InternalIPAddress) <= 0 {
-		return errors.New("[cluster] master node internal ip address can not be empty")
-	}
-
-	pkg, err := airgap.PreparePackage(cluster)
-	if err != nil {
-		return err
-	}
-	// package's name is empty, it means that it is a temporary dir and it needs to be remove after.
-	if pkg != nil && pkg.Name == "" {
-		defer os.RemoveAll(pkg.FilePath)
-	}
-
-	provider, err := providers.GetProvider(p.Provider)
-	if err != nil {
-		return err
-	}
-	masterExtraArgs := cluster.MasterExtraArgs
-	workerExtraArgs := cluster.WorkerExtraArgs
-
-	publicIP := cluster.IP
-	if cluster.IP == "" {
-		cluster.IP = cluster.MasterNodes[0].InternalIPAddress[0]
-		publicIP = cluster.MasterNodes[0].PublicIPAddress[0]
-	}
-
-	// upgrade server nodes
-	for i, node := range cluster.MasterNodes {
-		extraArgs := masterExtraArgs
-		providerExtraArgs := provider.GenerateMasterExtraArgs(cluster, node)
-		if providerExtraArgs != "" {
-			extraArgs += providerExtraArgs
-		}
-
-		var cmd string
-
-		if pkg != nil {
-			if err := p.scpFiles(cluster.Name, pkg, &node, extraArgs); err != nil {
-				return err
-			}
-			cmd = k3s.RestartCommand
-		} else {
-			cmd = k3s.InstallCommand(i == 0, publicIP, cluster, node, []string{extraArgs})
-		}
-
-		p.Logger.Infof("[cluster] upgrading k3s master %d command: %s", i+1, cmd)
-
-		if _, err := p.execute(&node, cmd); err != nil {
-			return err
-		}
-	}
-
-	// upgrade worker nodes
-	for i, node := range cluster.WorkerNodes {
-		extraArgs := workerExtraArgs
-		providerExtraArgs := provider.GenerateWorkerExtraArgs(cluster, node)
-		if providerExtraArgs != "" {
-			extraArgs += providerExtraArgs
-		}
-
-		var cmd string
-		if pkg != nil {
-			if err := p.scpFiles(cluster.Name, pkg, &node, extraArgs); err != nil {
-				return err
-			}
-			cmd = k3s.AgentRestartCommand
-		} else {
-			cmd = k3s.InstallCommand(false, publicIP, cluster, node, []string{extraArgs})
-		}
-
-		p.Logger.Infof("[cluster] upgrading k3s worker %d command: %s", i+1, cmd)
-
-		if _, err := p.execute(&node, cmd); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func nodeByInstanceID(nodes []types.Node) map[string]types.Node {
-	rtn := make(map[string]types.Node, len(nodes))
-	for _, node := range nodes {
-		rtn[node.InstanceID] = node
-	}
-	return rtn
 }
 
 func (p *ProviderBase) scpFiles(clusterName string, pkg *common.Package, node *types.Node, extraArgs string) error {
