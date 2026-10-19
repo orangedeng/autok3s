@@ -7,9 +7,10 @@ import (
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/pkg/errors"
-	"helm.sh/helm/v3/pkg/strvals"
 
 	"k8s.io/apimachinery/pkg/util/validation"
+
+	"github.com/orangedeng/autok3s/pkg/utils/strvals"
 )
 
 func GenerateValues(setValues map[string]string, defaultValues map[string]string) (map[string]interface{}, error) {

@@ -52,7 +52,6 @@ require (
 	google.golang.org/api v0.153.0
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/gorm v1.23.4
-	helm.sh/helm/v3 v3.14.4
 	k8s.io/api v0.36.1
 	k8s.io/apimachinery v0.36.1
 	k8s.io/client-go v0.36.1
