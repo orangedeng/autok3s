@@ -15,7 +15,6 @@ import (
 	"github.com/orangedeng/autok3s/pkg/cluster/kube"
 	"github.com/orangedeng/autok3s/pkg/common"
 	"github.com/orangedeng/autok3s/pkg/k3s"
-	"github.com/orangedeng/autok3s/pkg/providers"
 	"github.com/orangedeng/autok3s/pkg/types"
 	"golang.org/x/sync/syncmap"
 	"k8s.io/client-go/tools/clientcmd"
@@ -24,7 +23,8 @@ import (
 // JoinNodes join K3S nodes.
 // nolint: gocyclo
 func (p *ProviderBase) JoinNodes(cloudInstanceFunc func(ssh *types.SSH) (*types.Cluster, error),
-	syncExistInstance func() error, isAutoJoined bool, rollbackInstance func(ids []string) error) (er error) {
+	syncExistInstance func() error, isAutoJoined bool, rollbackInstance func(ids []string) error,
+	generateMasterExtraArgs, generateWorkerExtraArgs func(*types.Cluster, types.Node) string) (er error) {
 	if p.M == nil {
 		p.M = new(syncmap.Map)
 	}
@@ -124,7 +124,7 @@ func (p *ProviderBase) JoinNodes(cloudInstanceFunc func(ssh *types.SSH) (*types.
 
 	if !isAutoJoined {
 		// execute k3s script to join nodes.
-		err = p.Join(c, added)
+		err = p.Join(c, added, generateMasterExtraArgs, generateWorkerExtraArgs)
 	} else {
 		// some providers do not need to execute the K3s join logic,
 		// so we need to fill in the missing key information.
@@ -143,13 +143,9 @@ func (p *ProviderBase) JoinNodes(cloudInstanceFunc func(ssh *types.SSH) (*types.
 }
 
 // Join join K3S nodes to exist K3S cluster.
-func (p *ProviderBase) Join(merged, added *types.Cluster) error {
+func (p *ProviderBase) Join(merged, added *types.Cluster,
+	generateMasterExtraArgs, generateWorkerExtraArgs func(*types.Cluster, types.Node) string) error {
 	p.Logger.Infof("[%s] executing join k3s node logic", merged.Provider)
-
-	provider, err := providers.GetProvider(merged.Provider)
-	if err != nil {
-		return err
-	}
 
 	pkg, err := airgap.PreparePackage(merged)
 	if err != nil {
@@ -199,7 +195,7 @@ func (p *ProviderBase) Join(merged, added *types.Cluster) error {
 		}
 		extraArgs := merged.MasterExtraArgs
 		p.Logger.Infof("[%s] joining k3s master-%d...", merged.Provider, i+1)
-		additionalExtraArgs := provider.GenerateMasterExtraArgs(added, full)
+		additionalExtraArgs := generateMasterExtraArgs(added, full)
 		if additionalExtraArgs != "" {
 			extraArgs += additionalExtraArgs
 		}
@@ -224,7 +220,7 @@ func (p *ProviderBase) Join(merged, added *types.Cluster) error {
 			defer wg.Done()
 			p.Logger.Infof("[%s] joining k3s worker-%d...", merged.Provider, i+1)
 			extraArgs := merged.WorkerExtraArgs
-			additionalExtraArgs := provider.GenerateWorkerExtraArgs(added, full)
+			additionalExtraArgs := generateWorkerExtraArgs(added, full)
 			if additionalExtraArgs != "" {
 				extraArgs += additionalExtraArgs
 			}

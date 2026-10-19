@@ -15,7 +15,6 @@ import (
 	"github.com/orangedeng/autok3s/pkg/common"
 	"github.com/orangedeng/autok3s/pkg/hosts/dialer"
 	"github.com/orangedeng/autok3s/pkg/k3s"
-	"github.com/orangedeng/autok3s/pkg/providers"
 	"github.com/orangedeng/autok3s/pkg/types"
 	"github.com/orangedeng/autok3s/pkg/utils"
 	"github.com/rancher/wharfie/pkg/registries"
@@ -27,13 +26,9 @@ var (
 )
 
 // InitK3sCluster initial K3S cluster.
-func (p *ProviderBase) InitK3sCluster(cluster *types.Cluster, deployCCM func() []string) error {
+func (p *ProviderBase) InitK3sCluster(cluster *types.Cluster, deployCCM func() []string,
+	generateMasterExtraArgs, generateWorkerExtraArgs func(*types.Cluster, types.Node) string) error {
 	p.Logger.Infof("[%s] executing init k3s cluster logic...", p.Provider)
-
-	provider, err := providers.GetProvider(p.Provider)
-	if err != nil {
-		return err
-	}
 
 	pkg, err := airgap.PreparePackage(cluster)
 	if err != nil {
@@ -83,14 +78,15 @@ func (p *ProviderBase) InitK3sCluster(cluster *types.Cluster, deployCCM func() [
 		}
 	}
 
-	err = p.validateClusterConfig(cluster, provider, publicIP, pkg, firstControl, firstWorker, deployCCM)
+	err = p.validateClusterConfig(cluster, publicIP, pkg, firstControl, firstWorker, deployCCM,
+		generateMasterExtraArgs, generateWorkerExtraArgs)
 	if err != nil {
 		return err
 	}
 
 	for i, master := range controlNodes {
 		p.Logger.Infof("[%s] join k3s control-%d...", p.Provider, i+1)
-		if err := p.initControlNode(cluster, provider, publicIP, pkg, master, false); err != nil {
+		if err := p.initControlNode(cluster, publicIP, pkg, master, false, generateMasterExtraArgs); err != nil {
 			return err
 		}
 		p.Logger.Infof("[%s] successfully created k3s master-%d", p.Provider, i+1)
@@ -104,7 +100,7 @@ func (p *ProviderBase) InitK3sCluster(cluster *types.Cluster, deployCCM func() [
 		go func(i int, worker types.Node) {
 			defer wg.Done()
 			p.Logger.Infof("[%s] creating k3s worker-%d...", p.Provider, i+1)
-			if err := p.initWorkerNode(cluster, provider, publicIP, pkg, worker); err != nil {
+			if err := p.initWorkerNode(cluster, publicIP, pkg, worker, generateWorkerExtraArgs); err != nil {
 				l.Lock()
 				p.ErrM[worker.InstanceID] = err.Error()
 				l.Unlock()
@@ -412,9 +408,10 @@ func (p *ProviderBase) handleDataStoreCertificate(n *types.Node, c *types.Cluste
 	return err
 }
 
-func (p *ProviderBase) validateClusterConfig(cluster *types.Cluster, provider providers.Provider, publicIP string, pkg *common.Package, firstControl, firstWorker types.Node, deployCCM func() []string) error {
+func (p *ProviderBase) validateClusterConfig(cluster *types.Cluster, publicIP string, pkg *common.Package, firstControl, firstWorker types.Node, deployCCM func() []string,
+	generateMasterExtraArgs, generateWorkerExtraArgs func(*types.Cluster, types.Node) string) error {
 	p.Logger.Infof("[%s] initialize control node...", p.Provider)
-	if err := p.initControlNode(cluster, provider, publicIP, pkg, firstControl, true); err != nil {
+	if err := p.initControlNode(cluster, publicIP, pkg, firstControl, true, generateMasterExtraArgs); err != nil {
 		return err
 	}
 	if deployCCM != nil {
@@ -431,7 +428,7 @@ func (p *ProviderBase) validateClusterConfig(cluster *types.Cluster, provider pr
 		return nil
 	}
 	p.Logger.Infof("[%s] initialize worker node...", p.Provider)
-	if err := p.initWorkerNode(cluster, provider, publicIP, pkg, firstWorker); err != nil {
+	if err := p.initWorkerNode(cluster, publicIP, pkg, firstWorker, generateWorkerExtraArgs); err != nil {
 		return err
 	}
 	p.Logger.Infof("[%s] successfully initialize the first worker node", p.Provider)
@@ -439,9 +436,10 @@ func (p *ProviderBase) validateClusterConfig(cluster *types.Cluster, provider pr
 	return nil
 }
 
-func (p *ProviderBase) initControlNode(cluster *types.Cluster, provider providers.Provider, publicIP string, pkg *common.Package, controlNode types.Node, isFirst bool) error {
+func (p *ProviderBase) initControlNode(cluster *types.Cluster, publicIP string, pkg *common.Package, controlNode types.Node, isFirst bool,
+	generateMasterExtraArgs func(*types.Cluster, types.Node) string) error {
 	masterExtraArgs := cluster.MasterExtraArgs
-	providerExtraArgs := provider.GenerateMasterExtraArgs(cluster, controlNode)
+	providerExtraArgs := generateMasterExtraArgs(cluster, controlNode)
 	if providerExtraArgs != "" {
 		masterExtraArgs += providerExtraArgs
 	}
@@ -449,9 +447,10 @@ func (p *ProviderBase) initControlNode(cluster *types.Cluster, provider provider
 	return p.initNode(isFirst, publicIP, cluster, controlNode, masterExtraArgs, pkg)
 }
 
-func (p *ProviderBase) initWorkerNode(cluster *types.Cluster, provider providers.Provider, publicIP string, pkg *common.Package, workerNode types.Node) error {
+func (p *ProviderBase) initWorkerNode(cluster *types.Cluster, publicIP string, pkg *common.Package, workerNode types.Node,
+	generateWorkerExtraArgs func(*types.Cluster, types.Node) string) error {
 	workerExtraArgs := cluster.WorkerExtraArgs
-	providerExtraArgs := provider.GenerateWorkerExtraArgs(cluster, workerNode)
+	providerExtraArgs := generateWorkerExtraArgs(cluster, workerNode)
 	if providerExtraArgs != "" {
 		workerExtraArgs += providerExtraArgs
 	}

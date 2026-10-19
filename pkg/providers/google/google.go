@@ -94,7 +94,7 @@ func (p *Google) CreateK3sCluster() error {
 			return err
 		}
 	}
-	return p.InitCluster(p.Options, p.GenerateManifest, p.generateInstance, nil, p.rollbackInstance)
+	return p.InitCluster(p.Options, p.GenerateManifest, p.generateInstance, nil, p.rollbackInstance, p.GenerateMasterExtraArgs, p.GenerateWorkerExtraArgs)
 }
 
 // JoinK3sNode join K3S node for exist cluster on Google Cloud Provider.
@@ -107,7 +107,7 @@ func (p *Google) JoinK3sNode() error {
 			return err
 		}
 	}
-	return p.JoinNodes(p.generateInstance, p.syncInstances, false, p.rollbackInstance)
+	return p.JoinNodes(p.generateInstance, p.syncInstances, false, p.rollbackInstance, p.GenerateMasterExtraArgs, p.GenerateWorkerExtraArgs)
 }
 
 // DeleteK3sCluster delete K3S cluster.

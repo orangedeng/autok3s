@@ -15,7 +15,8 @@ import (
 
 // InitCluster init K3S cluster.
 func (p *ProviderBase) InitCluster(options interface{}, deployCCM func() []string,
-	cloudInstanceFunc func(ssh *types.SSH) (*types.Cluster, error), customInstallK3s func() (string, string, error), rollbackInstance func(ids []string) error) (er error) {
+	cloudInstanceFunc func(ssh *types.SSH) (*types.Cluster, error), customInstallK3s func() (string, string, error), rollbackInstance func(ids []string) error,
+	generateMasterExtraArgs, generateWorkerExtraArgs func(*types.Cluster, types.Node) string) (er error) {
 	logFile, err := common.GetLogFile(p.ContextName)
 	if err != nil {
 		return err
@@ -108,7 +109,7 @@ func (p *ProviderBase) InitCluster(options interface{}, deployCCM func() []strin
 
 	if customInstallK3s == nil {
 		// use install scripts to initialize K3s cluster.
-		if err = p.InitK3sCluster(c, deployCCM); err != nil {
+		if err = p.InitK3sCluster(c, deployCCM, generateMasterExtraArgs, generateWorkerExtraArgs); err != nil {
 			return err
 		}
 	} else {
