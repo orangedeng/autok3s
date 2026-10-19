@@ -1,7 +1,6 @@
 package common
 
 import (
-	"context"
 	"path/filepath"
 	"time"
 
@@ -64,8 +63,6 @@ var (
 	}
 	// DefaultDB default database store.
 	DefaultDB *Store
-
-	DashboardCanceled context.CancelFunc
 
 	FileManager *ConfigFileManager
 )

@@ -26,7 +26,7 @@ func main() {
 	rootCmd.AddCommand(cmd.CompletionCommand(), cmd.VersionCommand(gitVersion, gitCommit, gitTreeState, buildDate),
 		cmd.ListCommand(), cmd.CreateCommand(), cmd.JoinCommand(), cmd.KubectlCommand(), cmd.DeleteCommand(),
 		cmd.SSHCommand(), cmd.DescribeCommand(), cmd.ServeCommand(), cmd.UpgradeCommand(),
-		airgap.Command(), sshkey.Command(), cmd.DashboardCommand(), addon.Command())
+		airgap.Command(), sshkey.Command(), addon.Command())
 
 	rootCmd.PersistentPreRun = func(c *cobra.Command, args []string) {
 		common.InitLogger(logrus.StandardLogger())

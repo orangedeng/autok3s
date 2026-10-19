@@ -64,7 +64,6 @@
       <k-table-column type="action" field="action" width="120">
         <template #default="{ row }">
           <div class="flex items-center justify-end gap-4px">
-            <HelmDashboardLink :cluster="row" />
             <ClusterActions :cluster="row" @exec-command="handleCommand" />
           </div>
         </template>
@@ -123,7 +122,6 @@ import { remove, fetchById } from '@/api/cluster.js'
 import ClusterActions from './ClusterActions.vue'
 import ClusterBulkActions from './ClusterBulkActions.vue'
 import ClusterStateTag from './ClusterStateTag.vue'
-import HelmDashboardLink from './HelmDashboardLink.vue'
 import JoinNodeModal from './JoinNodeModal.vue'
 import ViewKubeconfigModal from './ViewKubeconfigModal.vue'
 import UpgradeModal from './UpgradeModal.vue'
