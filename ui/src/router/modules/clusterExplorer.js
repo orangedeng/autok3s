@@ -134,12 +134,6 @@ const clusterExplorerRouter = {
           hidden: true
         },
         {
-          path: 'feature-flags',
-          component: () => import('@/views/cluster-explorer/settings/feature-flags/index.vue'),
-          name: 'ClusterExplorerSettingsFeatureFlags',
-          meta: { title: 'Feature Flags', icon: 'switch' }
-        },
-        {
           path: 'add-ons',
           component: () => import('@/views/cluster-explorer/settings/add-ons/index.vue'),
           name: 'ClusterExplorerSettingsAddOns',

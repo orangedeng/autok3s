@@ -6,11 +6,3 @@ export function fetchList() {
     method: 'get'
   })
 }
-
-export function toggleHelmDashboard(data) {
-  return request({
-    url: '/settings/helm-dashboard-enabled',
-    method: 'put',
-    data
-  })
-}
