@@ -87,7 +87,7 @@ func (p *K3d) CreateK3sCluster() (err error) {
 
 // JoinK3sNode join K3S node.
 func (p *K3d) JoinK3sNode() (err error) {
-	return p.JoinNodes(p.joinK3d, p.syncK3d, true, p.rollbackK3d, p.GenerateMasterExtraArgs, p.GenerateWorkerExtraArgs)
+	return p.JoinNodes(p.joinK3d, p.syncK3d, true, p.rollbackK3d, p.GenerateMasterExtraArgs, p.GenerateWorkerExtraArgs, nil)
 }
 
 // DeleteK3sCluster delete K3S cluster.

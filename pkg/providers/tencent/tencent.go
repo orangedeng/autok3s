@@ -129,7 +129,7 @@ func (p *Tencent) JoinK3sNode() (err error) {
 		p.SSHUser = defaultUser
 	}
 
-	return p.JoinNodes(p.generateInstance, func() error { return nil }, false, p.rollbackInstance, p.GenerateMasterExtraArgs, p.GenerateWorkerExtraArgs)
+	return p.JoinNodes(p.generateInstance, func() error { return nil }, false, p.rollbackInstance, p.GenerateMasterExtraArgs, p.GenerateWorkerExtraArgs, nil)
 }
 
 func (p *Tencent) rollbackInstance(ids []string) error {

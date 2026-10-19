@@ -9,22 +9,20 @@ import (
 	"sync"
 
 	"encoding/json"
-	"path/filepath"
 
 	"github.com/orangedeng/autok3s/pkg/airgap"
-	"github.com/orangedeng/autok3s/pkg/cluster/kube"
 	"github.com/orangedeng/autok3s/pkg/common"
 	"github.com/orangedeng/autok3s/pkg/k3s"
 	"github.com/orangedeng/autok3s/pkg/types"
 	"golang.org/x/sync/syncmap"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 // JoinNodes join K3S nodes.
 // nolint: gocyclo
 func (p *ProviderBase) JoinNodes(cloudInstanceFunc func(ssh *types.SSH) (*types.Cluster, error),
 	syncExistInstance func() error, isAutoJoined bool, rollbackInstance func(ids []string) error,
-	generateMasterExtraArgs, generateWorkerExtraArgs func(*types.Cluster, types.Node) string) (er error) {
+	generateMasterExtraArgs, generateWorkerExtraArgs func(*types.Cluster, types.Node) string,
+	postJoin func(merged *types.Cluster) error) (er error) {
 	if p.M == nil {
 		p.M = new(syncmap.Map)
 	}
@@ -124,7 +122,7 @@ func (p *ProviderBase) JoinNodes(cloudInstanceFunc func(ssh *types.SSH) (*types.
 
 	if !isAutoJoined {
 		// execute k3s script to join nodes.
-		err = p.Join(c, added, generateMasterExtraArgs, generateWorkerExtraArgs)
+		err = p.Join(c, added, generateMasterExtraArgs, generateWorkerExtraArgs, postJoin)
 	} else {
 		// some providers do not need to execute the K3s join logic,
 		// so we need to fill in the missing key information.
@@ -144,7 +142,8 @@ func (p *ProviderBase) JoinNodes(cloudInstanceFunc func(ssh *types.SSH) (*types.
 
 // Join join K3S nodes to exist K3S cluster.
 func (p *ProviderBase) Join(merged, added *types.Cluster,
-	generateMasterExtraArgs, generateWorkerExtraArgs func(*types.Cluster, types.Node) string) error {
+	generateMasterExtraArgs, generateWorkerExtraArgs func(*types.Cluster, types.Node) string,
+	postJoin func(merged *types.Cluster) error) error {
 	p.Logger.Infof("[%s] executing join k3s node logic", merged.Provider)
 
 	pkg, err := airgap.PreparePackage(merged)
@@ -173,7 +172,7 @@ func (p *ProviderBase) Join(merged, added *types.Cluster,
 			serverNode = added.WorkerNodes[0]
 		}
 		serverNode.PublicIPAddress = []string{merged.IP}
-		token, err := p.execute(&serverNode, k3s.TokenCommand)
+		token, err := p.Execute(&serverNode, k3s.TokenCommand)
 		if err != nil {
 			return err
 		}
@@ -238,30 +237,9 @@ func (p *ProviderBase) Join(merged, added *types.Cluster,
 	merged.Master = strconv.Itoa(len(merged.MasterNodes))
 	merged.Worker = strconv.Itoa(len(merged.WorkerNodes))
 
-	if p.Provider == "native" {
-		// check cluster context exists
-		kubeCfg := filepath.Join(common.CfgPath, common.KubeCfgFile)
-		clientConfig, err := clientcmd.LoadFromFile(kubeCfg)
-		if err != nil {
+	if postJoin != nil {
+		if err := postJoin(merged); err != nil {
 			return err
-		}
-		contexts := clientConfig.Contexts
-		if _, ok := contexts[p.ContextName]; !ok {
-			// get k3s cluster config.
-			cfg, err := p.execute(&types.Node{
-				PublicIPAddress: []string{merged.IP},
-				SSH:             merged.SSH,
-				Master:          true,
-			}, k3s.CatConfigCommand)
-			if err == nil {
-				// merge current cluster to kube config.
-				if err := kube.SaveConfig(cfg, merged.IP, p.ContextName); err != nil {
-					p.Logger.Warnf("[%s] can't save kubeconfig file with error: %v", merged.Provider, err)
-				}
-				_ = os.Setenv(clientcmd.RecommendedConfigPathEnvVar, filepath.Join(common.CfgPath, common.KubeCfgFile))
-			} else {
-				p.Logger.Warnf("[%s] can't get kubeconfig file from master %s", merged.Provider, merged.IP)
-			}
 		}
 	}
 

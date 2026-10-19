@@ -107,7 +107,7 @@ func (p *Google) JoinK3sNode() error {
 			return err
 		}
 	}
-	return p.JoinNodes(p.generateInstance, p.syncInstances, false, p.rollbackInstance, p.GenerateMasterExtraArgs, p.GenerateWorkerExtraArgs)
+	return p.JoinNodes(p.generateInstance, p.syncInstances, false, p.rollbackInstance, p.GenerateMasterExtraArgs, p.GenerateWorkerExtraArgs, nil)
 }
 
 // DeleteK3sCluster delete K3S cluster.

@@ -157,7 +157,7 @@ func (p *Amazon) JoinK3sNode() (err error) {
 	if p.SSHUser == "" {
 		p.SSHUser = defaultUser
 	}
-	return p.JoinNodes(p.generateInstance, p.syncInstances, false, p.rollbackInstance, p.GenerateMasterExtraArgs, p.GenerateWorkerExtraArgs)
+	return p.JoinNodes(p.generateInstance, p.syncInstances, false, p.rollbackInstance, p.GenerateMasterExtraArgs, p.GenerateWorkerExtraArgs, nil)
 }
 
 // DeleteK3sCluster delete K3S cluster.
