@@ -143,7 +143,7 @@ func (p *ProviderBase) Upgrade(cluster *types.Cluster) error {
 
 		p.Logger.Infof("[cluster] upgrading k3s master %d command: %s", i+1, cmd)
 
-		if _, err := p.execute(&node, cmd); err != nil {
+		if _, err := p.Execute(&node, cmd); err != nil {
 			return err
 		}
 	}
@@ -168,7 +168,7 @@ func (p *ProviderBase) Upgrade(cluster *types.Cluster) error {
 
 		p.Logger.Infof("[cluster] upgrading k3s worker %d command: %s", i+1, cmd)
 
-		if _, err := p.execute(&node, cmd); err != nil {
+		if _, err := p.Execute(&node, cmd); err != nil {
 			return err
 		}
 	}

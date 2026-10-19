@@ -121,7 +121,7 @@ func (p *Alibaba) JoinK3sNode() (err error) {
 	if p.SSHUser == "" {
 		p.SSHUser = defaultUser
 	}
-	return p.JoinNodes(p.generateInstance, func() error { return nil }, false, p.rollbackInstance, p.GenerateMasterExtraArgs, p.GenerateWorkerExtraArgs)
+	return p.JoinNodes(p.generateInstance, func() error { return nil }, false, p.rollbackInstance, p.GenerateMasterExtraArgs, p.GenerateWorkerExtraArgs, nil)
 }
 
 func (p *Alibaba) rollbackInstance(ids []string) error {

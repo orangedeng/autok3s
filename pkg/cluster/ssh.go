@@ -142,12 +142,12 @@ func SSHK3sNode(ip string, cluster *types.Cluster, ssh *types.SSH) error {
 func (p *ProviderBase) UninstallK3sNodes(nodes []types.Node) (warnMsg []string) {
 	for _, node := range nodes {
 		if node.Master {
-			_, e := p.execute(&node, k3s.MasterUninstallCommand)
+			_, e := p.Execute(&node, k3s.MasterUninstallCommand)
 			if e != nil {
 				warnMsg = append(warnMsg, fmt.Sprintf("failed to uninstall k3s on master node %s: %s", node.InstanceID, e.Error()))
 			}
 		} else {
-			_, e := p.execute(&node, k3s.WorkerUninstallCommand)
+			_, e := p.Execute(&node, k3s.WorkerUninstallCommand)
 			if e != nil {
 				warnMsg = append(warnMsg, fmt.Sprintf("failed to uninstall k3s on worker node %s: %s", node.InstanceID, e.Error()))
 			}
@@ -157,7 +157,7 @@ func (p *ProviderBase) UninstallK3sNodes(nodes []types.Node) (warnMsg []string) 
 	return
 }
 
-func (p *ProviderBase) execute(n *types.Node, cmds ...string) (string, error) {
+func (p *ProviderBase) Execute(n *types.Node, cmds ...string) (string, error) {
 	if len(cmds) <= 0 {
 		return "", nil
 	}
@@ -187,7 +187,7 @@ func (p *ProviderBase) executeWithRetry(count int, n *types.Node, cmds ...string
 	var rtn string
 	var lastError error
 	err := wait.ExponentialBackoff(backoff, func() (bool, error) {
-		rtn, lastError = p.execute(n, cmds...)
+		rtn, lastError = p.Execute(n, cmds...)
 		if lastError != nil {
 			return false, nil
 		}

@@ -147,10 +147,10 @@ func (p *ProviderBase) InitK3sCluster(cluster *types.Cluster, deployCCM func() [
 
 // DeployExtraManifest deploy extra K3S manifest.
 func (p *ProviderBase) DeployExtraManifest(cluster *types.Cluster, cmds []string) error {
-	if _, err := p.execute(&cluster.MasterNodes[0], []string{fmt.Sprintf("mkdir -p %s", common.K3sManifestsDir)}...); err != nil {
+	if _, err := p.Execute(&cluster.MasterNodes[0], []string{fmt.Sprintf("mkdir -p %s", common.K3sManifestsDir)}...); err != nil {
 		return err
 	}
-	if _, err := p.execute(&cluster.MasterNodes[0], cmds...); err != nil {
+	if _, err := p.Execute(&cluster.MasterNodes[0], cmds...); err != nil {
 		return err
 	}
 	return nil
@@ -160,7 +160,7 @@ func (p *ProviderBase) initNode(isFirstMaster bool, fixedIP string, cluster *typ
 	if strings.Contains(extraArgs, "--docker") {
 		dockerCmd := fmt.Sprintf(k3s.DockerInstallCommand, cluster.DockerScript, cluster.DockerArg, cluster.DockerMirror)
 		p.Logger.Infof("[cluster] install docker command %s", dockerCmd)
-		if _, err := p.execute(&node, dockerCmd); err != nil {
+		if _, err := p.Execute(&node, dockerCmd); err != nil {
 			return err
 		}
 	}
@@ -198,7 +198,7 @@ func (p *ProviderBase) initNode(isFirstMaster bool, fixedIP string, cluster *typ
 
 	p.Logger.Infof("[cluster] k3s %s command: %s", nodeRole, cmd)
 
-	if _, err := p.execute(&node, cmd); err != nil {
+	if _, err := p.Execute(&node, cmd); err != nil {
 		return err
 	}
 
@@ -237,7 +237,7 @@ func (p *ProviderBase) handleRegistry(n *types.Node, c *types.Cluster) (err erro
 
 	cmd = append(cmd, fmt.Sprintf("echo \"%s\" | base64 -d | tee \"/etc/rancher/k3s/registries.yaml\"",
 		base64.StdEncoding.EncodeToString([]byte(registryContent))))
-	_, err = p.execute(n, cmd...)
+	_, err = p.Execute(n, cmd...)
 	return err
 }
 
@@ -279,7 +279,7 @@ func (p *ProviderBase) handleConfiguration(n *types.Node, c *types.Cluster) (err
 	cmd := []string{"mkdir -p /etc/rancher/k3s"}
 	cmd = append(cmd, fmt.Sprintf("echo \"%s\" | base64 -d | tee \"/etc/rancher/k3s/config.yaml\"",
 		base64.StdEncoding.EncodeToString(configFileContent)))
-	_, err = p.execute(n, cmd...)
+	_, err = p.Execute(n, cmd...)
 	return err
 }
 
@@ -404,7 +404,7 @@ func (p *ProviderBase) handleDataStoreCertificate(n *types.Node, c *types.Cluste
 		cmd = append(cmd, fmt.Sprintf("echo \"%s\" | base64 -d | tee \"%s/ds-cert.pem\"",
 			base64.StdEncoding.EncodeToString([]byte(p.DataStoreCertFileContent)), k3s.DataStoreCertificatesPath))
 	}
-	_, err := p.execute(n, cmd...)
+	_, err := p.Execute(n, cmd...)
 	return err
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strconv"
@@ -13,6 +14,7 @@ import (
 	"github.com/orangedeng/autok3s/pkg/cluster"
 	"github.com/orangedeng/autok3s/pkg/cluster/kube"
 	"github.com/orangedeng/autok3s/pkg/common"
+	"github.com/orangedeng/autok3s/pkg/k3s"
 	"github.com/orangedeng/autok3s/pkg/providers"
 	putil "github.com/orangedeng/autok3s/pkg/providers/utils"
 	"github.com/orangedeng/autok3s/pkg/types"
@@ -22,6 +24,7 @@ import (
 	"github.com/rancher/wrangler/v2/pkg/slice"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 // providerName is the name of this provider.
@@ -125,7 +128,35 @@ func (p *Native) JoinK3sNode() (err error) {
 
 	return p.JoinNodes(func(_ *types.SSH) (*types.Cluster, error) {
 		return c, nil
-	}, p.syncNodes, false, p.rollbackInstance, p.GenerateMasterExtraArgs, p.GenerateWorkerExtraArgs)
+	}, p.syncNodes, false, p.rollbackInstance, p.GenerateMasterExtraArgs, p.GenerateWorkerExtraArgs, p.ensureJoinKubeConfig)
+}
+
+// ensureJoinKubeConfig makes a joined cluster usable through kubectl: when
+// the cluster's context is missing from the kubeconfig, the kubeconfig is
+// fetched from the master node again.
+func (p *Native) ensureJoinKubeConfig(merged *types.Cluster) error {
+	kubeCfg := filepath.Join(common.CfgPath, common.KubeCfgFile)
+	clientConfig, err := clientcmd.LoadFromFile(kubeCfg)
+	if err != nil {
+		return err
+	}
+	if _, ok := clientConfig.Contexts[p.ContextName]; ok {
+		return nil
+	}
+	cfg, err := p.Execute(&types.Node{
+		PublicIPAddress: []string{merged.IP},
+		SSH:             merged.SSH,
+		Master:          true,
+	}, k3s.CatConfigCommand)
+	if err != nil {
+		p.Logger.Warnf("[%s] can't get kubeconfig file from master %s", merged.Provider, merged.IP)
+		return nil
+	}
+	if err := kube.SaveConfig(cfg, merged.IP, p.ContextName); err != nil {
+		p.Logger.Warnf("[%s] can't save kubeconfig file with error: %v", merged.Provider, err)
+	}
+	_ = os.Setenv(clientcmd.RecommendedConfigPathEnvVar, filepath.Join(common.CfgPath, common.KubeCfgFile))
+	return nil
 }
 
 func (p *Native) rollbackInstance(ids []string) error {
