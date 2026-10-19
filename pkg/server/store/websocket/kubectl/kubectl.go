@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/orangedeng/autok3s/pkg/common"
 	wssh "github.com/orangedeng/autok3s/pkg/server/store/websocket/ssh"
 
 	"github.com/gorilla/websocket"
@@ -73,8 +74,8 @@ func ptyHandler(apiOp *types.APIRequest) error {
 
 	// apiOp.Name is the kubectl context name, which is also the cluster ID.
 	// Connect to the first master node of that cluster and rely on the
-	// `k3s kubectl` subcommand that ships with every K3s installation, so no
-	// local kubectl binary is required.
+	// kubectl that ships with every K3s installation, so no local kubectl
+	// binary is required.
 	dialer, err := wssh.NewMasterDialer(apiOp.Name, c)
 	if err != nil {
 		return err
@@ -85,7 +86,12 @@ func ptyHandler(apiOp *types.APIRequest) error {
 		return err
 	}
 
+	// k3d node containers ship a standalone kubectl binary; cloud nodes
+	// expose it through the k3s subcommand.
 	aliasCmd := "alias kubectl='k3s kubectl'\nalias k='k3s kubectl'\n"
+	if state, err := common.DefaultDB.GetClusterByID(apiOp.Name); err == nil && state != nil && state.Provider == "k3d" {
+		aliasCmd = "alias k='kubectl'\n"
+	}
 
 	if err := dialer.Write([]byte(aliasCmd)); err != nil {
 		return err
