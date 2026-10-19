@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 
@@ -19,13 +18,16 @@ var (
 		Short: "Run as daemon and serve HTTP/HTTPS request",
 	}
 
-	bindPort    = "8080"
-	bindAddress = "127.0.0.1"
+	bindPort     = "8080"
+	bindAddress  = "127.0.0.1"
+	pprofAddress = "127.0.0.1:6060"
 )
 
 func init() {
 	serveCmd.Flags().StringVar(&bindPort, "bind-port", bindPort, "HTTP/HTTPS bind port")
 	serveCmd.Flags().StringVar(&bindAddress, "bind-address", bindAddress, "HTTP/HTTPS bind address")
+	serveCmd.Flags().StringVar(&pprofAddress, "pprof-address", pprofAddress,
+		"dedicated address for the pprof endpoints, loopback by default, empty to disable")
 }
 
 // ServeCommand serve command.
@@ -35,10 +37,9 @@ func ServeCommand() *cobra.Command {
 		router := server.Start()
 		addr := fmt.Sprintf("%s:%s", bindAddress, bindPort)
 
-		// start helm-dashboard server
-		go func(ctx context.Context) {
-			common.InitDashboard(ctx)
-		}(serveCmd.Context())
+		if pprofAddress != "" {
+			server.StartPprof(pprofAddress)
+		}
 
 		stopChan := make(chan struct{})
 		go func(c chan struct{}) {

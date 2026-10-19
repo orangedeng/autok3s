@@ -11,10 +11,24 @@ import (
 	"github.com/rancher/apiserver/pkg/server"
 	"github.com/rancher/apiserver/pkg/store/apiroot"
 	"github.com/rancher/apiserver/pkg/types"
+	"github.com/sirupsen/logrus"
 
-	// pprof
-	"net/http/pprof"
+	// registers the pprof handlers on http.DefaultServeMux, which is only
+	// ever served by the dedicated loopback listener in StartPprof.
+	_ "net/http/pprof"
 )
+
+// StartPprof serves the standard pprof endpoints on a dedicated listener
+// (loopback by default) so profiling never rides the main server, which
+// may be bound to a public interface.
+func StartPprof(addr string) {
+	go func() {
+		logrus.Infof("serving pprof on %s", addr)
+		if err := http.ListenAndServe(addr, nil); err != nil {
+			logrus.Warnf("pprof listener stopped: %v", err)
+		}
+	}()
+}
 
 // Start starts daemon.
 func Start() http.Handler {
@@ -48,20 +62,6 @@ func Start() http.Handler {
 	router.Path("/").HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		http.Redirect(rw, req, "/ui/", http.StatusFound)
 	})
-
-	// profiling handlers for pprof under /debug/pprof.
-	router.HandleFunc("/debug/pprof/", pprof.Index)
-	router.HandleFunc("/debug/pprof/trace", pprof.Trace)
-	router.HandleFunc("/debug/pprof/profile", pprof.Profile)
-	router.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-	router.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-
-	// Manually add support for paths linked to by index page at /debug/pprof/
-	router.Handle("/debug/pprof/goroutine", pprof.Handler("goroutine"))
-	router.Handle("/debug/pprof/heap", pprof.Handler("heap"))
-	router.Handle("/debug/pprof/threadcreate", pprof.Handler("threadcreate"))
-	router.Handle("/debug/pprof/block", pprof.Handler("block"))
-	router.Handle("/debug/pprof/mutex", pprof.Handler("mutex"))
 
 	router.PathPrefix("/meta/proxy").Handler(proxy.NewProxy("/proxy/"))
 	router.PathPrefix("/k8s/proxy").Handler(proxy.NewK8sProxy())
