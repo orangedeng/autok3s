@@ -15,6 +15,7 @@ import (
 	"github.com/orangedeng/autok3s/pkg/airgap"
 	"github.com/orangedeng/autok3s/pkg/common"
 	"github.com/orangedeng/autok3s/pkg/hosts/dialer"
+	"github.com/orangedeng/autok3s/pkg/k3s"
 	"github.com/orangedeng/autok3s/pkg/providers"
 	"github.com/orangedeng/autok3s/pkg/types"
 	"github.com/orangedeng/autok3s/pkg/utils"
@@ -31,8 +32,7 @@ import (
 )
 
 var (
-	registryPath              = "/etc/rancher/k3s"
-	datastoreCertificatesPath = "/etc/rancher/datastore"
+	registryPath = "/etc/rancher/k3s"
 )
 
 // InitK3sCluster initial K3S cluster.
@@ -124,7 +124,7 @@ func (p *ProviderBase) InitK3sCluster(cluster *types.Cluster, deployCCM func() [
 	wg.Wait()
 
 	// get k3s cluster config.
-	cfg, err := p.executeWithRetry(3, &cluster.MasterNodes[0], catCfgCommand)
+	cfg, err := p.executeWithRetry(3, &cluster.MasterNodes[0], k3s.CatConfigCommand)
 	if err != nil {
 		return err
 	}
@@ -193,7 +193,7 @@ func (p *ProviderBase) Join(merged, added *types.Cluster) error {
 			serverNode = added.WorkerNodes[0]
 		}
 		serverNode.PublicIPAddress = []string{merged.IP}
-		token, err := p.execute(&serverNode, getTokenCommand)
+		token, err := p.execute(&serverNode, k3s.TokenCommand)
 		if err != nil {
 			return err
 		}
@@ -272,7 +272,7 @@ func (p *ProviderBase) Join(merged, added *types.Cluster) error {
 				PublicIPAddress: []string{merged.IP},
 				SSH:             merged.SSH,
 				Master:          true,
-			}, catCfgCommand)
+			}, k3s.CatConfigCommand)
 			if err == nil {
 				// merge current cluster to kube config.
 				if err := SaveCfg(cfg, merged.IP, p.ContextName); err != nil {
@@ -358,12 +358,12 @@ func SSHK3sNode(ip string, cluster *types.Cluster, ssh *types.SSH) error {
 func (p *ProviderBase) UninstallK3sNodes(nodes []types.Node) (warnMsg []string) {
 	for _, node := range nodes {
 		if node.Master {
-			_, e := p.execute(&node, masterUninstallCommand)
+			_, e := p.execute(&node, k3s.MasterUninstallCommand)
 			if e != nil {
 				warnMsg = append(warnMsg, fmt.Sprintf("failed to uninstall k3s on master node %s: %s", node.InstanceID, e.Error()))
 			}
 		} else {
-			_, e := p.execute(&node, workerUninstallCommand)
+			_, e := p.execute(&node, k3s.WorkerUninstallCommand)
 			if e != nil {
 				warnMsg = append(warnMsg, fmt.Sprintf("failed to uninstall k3s on worker node %s: %s", node.InstanceID, e.Error()))
 			}
@@ -420,7 +420,7 @@ func (p *ProviderBase) DeployExtraManifest(cluster *types.Cluster, cmds []string
 
 func (p *ProviderBase) initNode(isFirstMaster bool, fixedIP string, cluster *types.Cluster, node types.Node, extraArgs string, pkg *common.Package) error {
 	if strings.Contains(extraArgs, "--docker") {
-		dockerCmd := fmt.Sprintf(dockerCommand, cluster.DockerScript, cluster.DockerArg, cluster.DockerMirror)
+		dockerCmd := fmt.Sprintf(k3s.DockerInstallCommand, cluster.DockerScript, cluster.DockerArg, cluster.DockerMirror)
 		p.Logger.Infof("[cluster] install docker command %s", dockerCmd)
 		if _, err := p.execute(&node, dockerCmd); err != nil {
 			return err
@@ -452,7 +452,7 @@ func (p *ProviderBase) initNode(isFirstMaster bool, fixedIP string, cluster *typ
 		return err
 	}
 
-	cmd := getCommand(isFirstMaster, fixedIP, cluster, node, []string{extraArgs})
+	cmd := k3s.InstallCommand(isFirstMaster, fixedIP, cluster, node, []string{extraArgs})
 	nodeRole := "master"
 	if !node.Master {
 		nodeRole = "worker"
@@ -842,9 +842,9 @@ func (p *ProviderBase) Upgrade(cluster *types.Cluster) error {
 			if err := p.scpFiles(cluster.Name, pkg, &node, extraArgs); err != nil {
 				return err
 			}
-			cmd = k3sRestart
+			cmd = k3s.RestartCommand
 		} else {
-			cmd = getCommand(i == 0, publicIP, cluster, node, []string{extraArgs})
+			cmd = k3s.InstallCommand(i == 0, publicIP, cluster, node, []string{extraArgs})
 		}
 
 		p.Logger.Infof("[cluster] upgrading k3s master %d command: %s", i+1, cmd)
@@ -867,9 +867,9 @@ func (p *ProviderBase) Upgrade(cluster *types.Cluster) error {
 			if err := p.scpFiles(cluster.Name, pkg, &node, extraArgs); err != nil {
 				return err
 			}
-			cmd = k3sAgentRestart
+			cmd = k3s.AgentRestartCommand
 		} else {
-			cmd = getCommand(false, publicIP, cluster, node, []string{extraArgs})
+			cmd = k3s.InstallCommand(false, publicIP, cluster, node, []string{extraArgs})
 		}
 
 		p.Logger.Infof("[cluster] upgrading k3s worker %d command: %s", i+1, cmd)
@@ -901,14 +901,14 @@ func (p *ProviderBase) scpFiles(clusterName string, pkg *common.Package, node *t
 
 func (p *ProviderBase) handleDataStoreCertificate(n *types.Node, c *types.Cluster) error {
 	cmd := make([]string, 0)
-	cmd = append(cmd, fmt.Sprintf("mkdir -p %s", datastoreCertificatesPath))
+	cmd = append(cmd, fmt.Sprintf("mkdir -p %s", k3s.DataStoreCertificatesPath))
 	if c.DataStoreCAFile != "" {
 		caFile, err := os.ReadFile(c.DataStoreCAFile)
 		if err != nil {
 			return err
 		}
 		cmd = append(cmd, fmt.Sprintf("echo \"%s\" | base64 -d | tee \"%s/ds-ca.pem\"",
-			base64.StdEncoding.EncodeToString(caFile), datastoreCertificatesPath))
+			base64.StdEncoding.EncodeToString(caFile), k3s.DataStoreCertificatesPath))
 	}
 	if c.DataStoreCertFile != "" {
 		certFile, err := os.ReadFile(c.DataStoreCertFile)
@@ -916,7 +916,7 @@ func (p *ProviderBase) handleDataStoreCertificate(n *types.Node, c *types.Cluste
 			return err
 		}
 		cmd = append(cmd, fmt.Sprintf("echo \"%s\" | base64 -d | tee \"%s/ds-cert.pem\"",
-			base64.StdEncoding.EncodeToString(certFile), datastoreCertificatesPath))
+			base64.StdEncoding.EncodeToString(certFile), k3s.DataStoreCertificatesPath))
 	}
 	if c.DataStoreKeyFile != "" {
 		keyFile, err := os.ReadFile(c.DataStoreKeyFile)
@@ -924,19 +924,19 @@ func (p *ProviderBase) handleDataStoreCertificate(n *types.Node, c *types.Cluste
 			return err
 		}
 		cmd = append(cmd, fmt.Sprintf("echo \"%s\" | base64 -d | tee \"%s/ds-key.pem\"",
-			base64.StdEncoding.EncodeToString(keyFile), datastoreCertificatesPath))
+			base64.StdEncoding.EncodeToString(keyFile), k3s.DataStoreCertificatesPath))
 	}
 	if c.DataStoreCAFileContent != "" {
 		cmd = append(cmd, fmt.Sprintf("echo \"%s\" | base64 -d | tee \"%s/ds-ca.pem\"",
-			base64.StdEncoding.EncodeToString([]byte(p.DataStoreCAFileContent)), datastoreCertificatesPath))
+			base64.StdEncoding.EncodeToString([]byte(p.DataStoreCAFileContent)), k3s.DataStoreCertificatesPath))
 	}
 	if c.DataStoreKeyFileContent != "" {
 		cmd = append(cmd, fmt.Sprintf("echo \"%s\" | base64 -d | tee \"%s/ds-key.pem\"",
-			base64.StdEncoding.EncodeToString([]byte(p.DataStoreKeyFileContent)), datastoreCertificatesPath))
+			base64.StdEncoding.EncodeToString([]byte(p.DataStoreKeyFileContent)), k3s.DataStoreCertificatesPath))
 	}
 	if c.DataStoreCertFileContent != "" {
 		cmd = append(cmd, fmt.Sprintf("echo \"%s\" | base64 -d | tee \"%s/ds-cert.pem\"",
-			base64.StdEncoding.EncodeToString([]byte(p.DataStoreCertFileContent)), datastoreCertificatesPath))
+			base64.StdEncoding.EncodeToString([]byte(p.DataStoreCertFileContent)), k3s.DataStoreCertificatesPath))
 	}
 	_, err := p.execute(n, cmd...)
 	return err
