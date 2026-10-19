@@ -1,4 +1,8 @@
-package cluster
+// Package k3s assembles the shell commands that install, join, restart and
+// uninstall K3s on remote nodes. Everything here is pure string assembly on
+// top of pkg/types: no IO, no SSH, no database, which keeps the security
+// sensitive command surface easy to review and unit test.
+package k3s
 
 import (
 	"fmt"
@@ -10,20 +14,32 @@ import (
 
 const (
 	tlsSanArg = "--tls-san"
+
+	// DataStoreCertificatesPath is the remote directory the datastore
+	// certificates are written to before K3s starts.
+	DataStoreCertificatesPath = "/etc/rancher/datastore"
 )
 
 var (
-	getTokenCommand        = "cat /var/lib/rancher/k3s/server/node-token"
-	catCfgCommand          = "cat /etc/rancher/k3s/k3s.yaml"
-	dockerCommand          = "if ! type docker; then curl -sSL %s | %s sh - %s; fi"
-	masterUninstallCommand = "[ -x /usr/local/bin/k3s-uninstall.sh ] && sh /usr/local/bin/k3s-uninstall.sh || true"
-	workerUninstallCommand = "[ -x /usr/local/bin/k3s-agent-uninstall.sh ] && sh /usr/local/bin/k3s-agent-uninstall.sh || true"
-	k3sRestart             = `if [ -n "$(command -v systemctl)" ]; then systemctl restart k3s; elif [ -n "$(command -v service)" ]; then service k3s restart; fi`
-	k3sAgentRestart        = `if [ -n "$(command -v systemctl)" ]; then systemctl restart k3s-agent; elif [ -n "$(command -v service)" ]; then service k3s-agent restart; fi`
+	// TokenCommand reads the node token of a master node.
+	TokenCommand = "cat /var/lib/rancher/k3s/server/node-token"
+	// CatConfigCommand prints the kubeconfig of a master node.
+	CatConfigCommand = "cat /etc/rancher/k3s/k3s.yaml"
+	// DockerInstallCommand installs docker when it is not present yet.
+	DockerInstallCommand = "if ! type docker; then curl -sSL %s | %s sh - %s; fi"
+	// MasterUninstallCommand uninstalls K3s from a master node.
+	MasterUninstallCommand = "[ -x /usr/local/bin/k3s-uninstall.sh ] && sh /usr/local/bin/k3s-uninstall.sh || true"
+	// WorkerUninstallCommand uninstalls the K3s agent from a worker node.
+	WorkerUninstallCommand = "[ -x /usr/local/bin/k3s-agent-uninstall.sh ] && sh /usr/local/bin/k3s-agent-uninstall.sh || true"
+	// RestartCommand restarts the K3s server service.
+	RestartCommand = `if [ -n "$(command -v systemctl)" ]; then systemctl restart k3s; elif [ -n "$(command -v service)" ]; then service k3s restart; fi`
+	// AgentRestartCommand restarts the K3s agent service.
+	AgentRestartCommand = `if [ -n "$(command -v systemctl)" ]; then systemctl restart k3s-agent; elif [ -n "$(command -v service)" ]; then service k3s-agent restart; fi`
 )
 
-// getCommand first node should be init
-func getCommand(isFirstMaster bool, fixedIP string, cluster *types.Cluster, node types.Node, extraArgs []string) string {
+// InstallCommand renders the shell command that installs K3s on one node.
+// The first master initializes the cluster; every other node joins it.
+func InstallCommand(isFirstMaster bool, fixedIP string, cluster *types.Cluster, node types.Node, extraArgs []string) string {
 	var commandPrefix, commandSuffix string
 	envVar := map[string]string{}
 	// prepare for install env
@@ -74,16 +90,18 @@ func getCommand(isFirstMaster bool, fixedIP string, cluster *types.Cluster, node
 	return strings.TrimSpace(fmt.Sprintf("%s %s %s", commandPrefix, strings.Join(sortedEnvVars, " "), commandSuffix))
 }
 
-func getTLSSans(cluster *types.Cluster) []string {
+// TLSSans returns the sorted, deduplicated list of TLS SANs of the cluster:
+// the explicitly configured ones plus the addresses of all master nodes.
+func TLSSans(cluster *types.Cluster) []string {
 	dedump := map[string]bool{}
 	for _, san := range cluster.TLSSans {
 		dedump[san] = true
 	}
 	for _, master := range cluster.MasterNodes {
-		if addr := getFirstAddress(master.PublicIPAddress); addr != "" {
+		if addr := FirstAddress(master.PublicIPAddress); addr != "" {
 			dedump[addr] = true
 		}
-		if addr := getFirstAddress(master.InternalIPAddress); addr != "" {
+		if addr := FirstAddress(master.InternalIPAddress); addr != "" {
 			dedump[addr] = true
 		}
 	}
@@ -95,8 +113,8 @@ func getTLSSans(cluster *types.Cluster) []string {
 	return rtn
 }
 
-// getFirstAddress
-func getFirstAddress(addresses []string) string {
+// FirstAddress returns the first non empty address of the list.
+func FirstAddress(addresses []string) string {
 	for _, addr := range addresses {
 		if addr != "" {
 			return addr
@@ -117,15 +135,15 @@ func getRunArgs(isFirstMaster bool, fixedIP string, cluster *types.Cluster, node
 		}
 
 		if cluster.DataStoreCAFileContent != "" || cluster.DataStoreCAFile != "" {
-			runArgs = append(runArgs, fmt.Sprintf("--datastore-cafile=%s/ds-ca.pem", datastoreCertificatesPath))
+			runArgs = append(runArgs, fmt.Sprintf("--datastore-cafile=%s/ds-ca.pem", DataStoreCertificatesPath))
 		}
 
 		if cluster.DataStoreCertFileContent != "" || cluster.DataStoreCertFile != "" {
-			runArgs = append(runArgs, fmt.Sprintf("--datastore-certfile=%s/ds-cert.pem", datastoreCertificatesPath))
+			runArgs = append(runArgs, fmt.Sprintf("--datastore-certfile=%s/ds-cert.pem", DataStoreCertificatesPath))
 		}
 
 		if cluster.DataStoreKeyFileContent != "" || cluster.DataStoreKeyFile != "" {
-			runArgs = append(runArgs, fmt.Sprintf("--datastore-keyfile=%s/ds-key.pem", datastoreCertificatesPath))
+			runArgs = append(runArgs, fmt.Sprintf("--datastore-keyfile=%s/ds-key.pem", DataStoreCertificatesPath))
 		}
 
 		if isCluster && isFirstMaster {
@@ -139,11 +157,11 @@ func getRunArgs(isFirstMaster bool, fixedIP string, cluster *types.Cluster, node
 			runArgs = append(runArgs, "--cluster-cidr="+cluster.ClusterCidr)
 		}
 
-		for _, san := range getTLSSans(cluster) {
+		for _, san := range TLSSans(cluster) {
 			runArgs = append(runArgs, tlsSanArg+"="+san)
 		}
 
-		internalIPAddress := getFirstAddress(node.InternalIPAddress)
+		internalIPAddress := FirstAddress(node.InternalIPAddress)
 		if internalIPAddress != "" {
 			runArgs = append(runArgs, "--advertise-address="+internalIPAddress)
 		}
@@ -153,7 +171,7 @@ func getRunArgs(isFirstMaster bool, fixedIP string, cluster *types.Cluster, node
 		}
 	}
 
-	if externalAddr := getFirstAddress(node.PublicIPAddress); externalAddr != "" {
+	if externalAddr := FirstAddress(node.PublicIPAddress); externalAddr != "" {
 		runArgs = append(runArgs, "--node-external-ip="+externalAddr)
 	}
 
