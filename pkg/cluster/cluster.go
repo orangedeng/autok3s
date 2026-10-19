@@ -1,18 +1,17 @@
 package cluster
 
 import (
-	"context"
 	"encoding/base64"
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/orangedeng/autok3s/pkg/airgap"
+	"github.com/orangedeng/autok3s/pkg/cluster/kube"
 	"github.com/orangedeng/autok3s/pkg/common"
 	"github.com/orangedeng/autok3s/pkg/hosts/dialer"
 	"github.com/orangedeng/autok3s/pkg/k3s"
@@ -22,12 +21,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rancher/wharfie/pkg/registries"
-	"github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -130,7 +124,7 @@ func (p *ProviderBase) InitK3sCluster(cluster *types.Cluster, deployCCM func() [
 	}
 
 	// merge current cluster to kube config.
-	if err := SaveCfg(cfg, publicIP, cluster.ContextName); err != nil {
+	if err := kube.SaveConfig(cfg, publicIP, cluster.ContextName); err != nil {
 		return err
 	}
 	_ = os.Setenv(clientcmd.RecommendedConfigPathEnvVar, filepath.Join(common.CfgPath, common.KubeCfgFile))
@@ -275,7 +269,7 @@ func (p *ProviderBase) Join(merged, added *types.Cluster) error {
 			}, k3s.CatConfigCommand)
 			if err == nil {
 				// merge current cluster to kube config.
-				if err := SaveCfg(cfg, merged.IP, p.ContextName); err != nil {
+				if err := kube.SaveConfig(cfg, merged.IP, p.ContextName); err != nil {
 					p.Logger.Warnf("[%s] can't save kubeconfig file with error: %v", merged.Provider, err)
 				}
 				_ = os.Setenv(clientcmd.RecommendedConfigPathEnvVar, filepath.Join(common.CfgPath, common.KubeCfgFile))
@@ -371,40 +365,6 @@ func (p *ProviderBase) UninstallK3sNodes(nodes []types.Node) (warnMsg []string) 
 	}
 
 	return
-}
-
-// SaveCfg save kube config file.
-func SaveCfg(cfg, ip, context string) error {
-	replacer := strings.NewReplacer(
-		"127.0.0.1", ip,
-		"localhost", ip,
-		"default", context,
-	)
-
-	result := replacer.Replace(cfg)
-
-	tempPath := filepath.Join(common.CfgPath, ".kube")
-	if err := utils.EnsureFolderExist(tempPath); err != nil {
-		return fmt.Errorf("[cluster] generate kubecfg temp folder error, msg: %s", err)
-	}
-
-	temp, err := os.CreateTemp(tempPath, common.KubeCfgTempName)
-	if err != nil {
-		return fmt.Errorf("[cluster] generate kubecfg temp file error, msg: %s", err)
-	}
-	defer func() {
-		_ = temp.Close()
-		if err := os.Remove(temp.Name()); err != nil {
-			logrus.Errorf("[cluster] remove kubecfg temp file error, msg: %s", err)
-		}
-	}()
-
-	absPath, _ := filepath.Abs(temp.Name())
-	if err = os.WriteFile(absPath, []byte(result), 0600); err != nil {
-		return fmt.Errorf("[cluster] write content to kubecfg temp file error: %v", err)
-	}
-
-	return common.FileManager.SaveCfg(context, temp.Name())
 }
 
 // DeployExtraManifest deploy extra K3S manifest.
@@ -677,127 +637,6 @@ func saveRegistryTLS(registry *registries.Registry, m map[string]map[string][]by
 	}
 
 	return cmd, nil
-}
-
-func buildConfigFromFlags(context, kubeconfigPath string) (*rest.Config, error) {
-	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-		&clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfigPath},
-		&clientcmd.ConfigOverrides{
-			CurrentContext: context,
-		}).ClientConfig()
-}
-
-// GetClusterConfig generate kube config.
-func GetClusterConfig(name, kubeconfig string) (*kubernetes.Clientset, error) {
-	config, err := buildConfigFromFlags(name, kubeconfig)
-	if err != nil {
-		return nil, err
-	}
-	config.Timeout = 15 * time.Second
-	c, err := kubernetes.NewForConfig(config)
-	return c, err
-}
-
-// GetClusterStatus get cluster status using cluster's /readyz API.
-func GetClusterStatus(c *kubernetes.Clientset) string {
-	_, err := c.RESTClient().Get().Timeout(15 * time.Second).RequestURI("/readyz").DoRaw(context.TODO())
-	if err != nil {
-		return types.ClusterStatusStopped
-	}
-	return types.ClusterStatusRunning
-}
-
-// GetClusterVersion get kube cluster version.
-func GetClusterVersion(c *kubernetes.Clientset) string {
-	v, err := c.DiscoveryClient.ServerVersion()
-	if err != nil {
-		return types.ClusterStatusUnknown
-	}
-	return v.GitVersion
-}
-
-// DescribeClusterNodes describe cluster nodes.
-func DescribeClusterNodes(client *kubernetes.Clientset, instanceNodes []types.ClusterNode) ([]types.ClusterNode, error) {
-	// list cluster nodes.
-	timeout := int64(5 * time.Second)
-	nodeList, err := client.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{TimeoutSeconds: &timeout})
-	if err != nil || nodeList == nil {
-		return nil, err
-	}
-	for _, node := range nodeList.Items {
-		var internalIP, externalIP, hostName string
-		addressList := node.Status.Addresses
-		for _, address := range addressList {
-			switch address.Type {
-			case v1.NodeInternalIP:
-				internalIP = address.Address
-			case v1.NodeExternalIP:
-				externalIP = address.Address
-			case v1.NodeHostName:
-				hostName = address.Address
-			default:
-				continue
-			}
-		}
-		for index, n := range instanceNodes {
-			isCurrentInstance := false
-			for _, address := range n.InternalIP {
-				if address == internalIP {
-					isCurrentInstance = true
-					break
-				}
-			}
-			if !isCurrentInstance {
-				for _, address := range n.ExternalIP {
-					if address == externalIP {
-						isCurrentInstance = true
-						break
-					}
-				}
-			}
-			if !isCurrentInstance {
-				if n.InstanceID == node.Name {
-					isCurrentInstance = true
-				}
-			}
-			if isCurrentInstance {
-				n.HostName = hostName
-				n.Version = node.Status.NodeInfo.KubeletVersion
-				n.ContainerRuntimeVersion = node.Status.NodeInfo.ContainerRuntimeVersion
-				// get roles.
-				labels := node.Labels
-				roles := make([]string, 0)
-				for role := range labels {
-					if strings.HasPrefix(role, "node-role.kubernetes.io") {
-						roleArray := strings.Split(role, "/")
-						if len(roleArray) > 1 {
-							roles = append(roles, roleArray[1])
-						}
-					}
-				}
-				if len(roles) == 0 {
-					roles = append(roles, "<none>")
-				}
-				sort.Strings(roles)
-				n.Roles = strings.Join(roles, ",")
-				// get status.
-				conditions := node.Status.Conditions
-				for _, c := range conditions {
-					if c.Type == v1.NodeReady {
-						if c.Status == v1.ConditionTrue {
-							n.Status = "Ready"
-						} else {
-							n.Status = "NotReady"
-						}
-						break
-					}
-				}
-				instanceNodes[index] = n
-				break
-			}
-		}
-	}
-	return instanceNodes, nil
 }
 
 func (p *ProviderBase) Upgrade(cluster *types.Cluster) error {
