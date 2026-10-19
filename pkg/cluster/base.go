@@ -14,6 +14,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/orangedeng/autok3s/pkg/cluster/kube"
 	"github.com/orangedeng/autok3s/pkg/common"
 	"github.com/orangedeng/autok3s/pkg/hosts/dialer"
 	"github.com/orangedeng/autok3s/pkg/providers"
@@ -454,7 +455,7 @@ func (p *ProviderBase) InitCluster(options interface{}, deployCCM func() []strin
 			return err
 		}
 		// save current cluster's kubeConfig.
-		if err := SaveCfg(cfg, ip, c.ContextName); err != nil {
+		if err := kube.SaveConfig(cfg, ip, c.ContextName); err != nil {
 			return err
 		}
 		_ = os.Setenv(clientcmd.RecommendedConfigPathEnvVar, filepath.Join(common.CfgPath, common.KubeCfgFile))
@@ -905,7 +906,7 @@ func (p *ProviderBase) GetClusterStatus(kubeCfg string, c *types.ClusterInfo, de
 		return c
 	}
 
-	client, err := GetClusterConfig(p.ContextName, kubeCfg)
+	client, err := kube.Client(p.ContextName, kubeCfg)
 	if err != nil {
 		p.Logger.Errorf("[%s] failed to generate kube client for cluster %s: %v", p.Provider, p.ContextName, err)
 		c.Status = types.ClusterStatusUnknown
@@ -913,9 +914,9 @@ func (p *ProviderBase) GetClusterStatus(kubeCfg string, c *types.ClusterInfo, de
 		return c
 	}
 
-	c.Status = GetClusterStatus(client)
+	c.Status = kube.Status(client)
 	if c.Status == types.ClusterStatusRunning {
-		c.Version = GetClusterVersion(client)
+		c.Version = kube.Version(client)
 	} else {
 		c.Version = types.ClusterStatusUnknown
 	}
@@ -1149,14 +1150,14 @@ func (p *ProviderBase) Describe(kubeCfg string, c *types.ClusterInfo, describeIn
 		return c
 	}
 	p.Logger = logrus.StandardLogger()
-	client, err := GetClusterConfig(p.ContextName, kubeCfg)
+	client, err := kube.Client(p.ContextName, kubeCfg)
 	if err != nil {
 		p.Logger.Errorf("[%s] failed to generate kube client for cluster %s: %v", p.Provider, p.Name, err)
 		c.Status = types.ClusterStatusUnknown
 		c.Version = types.ClusterStatusUnknown
 		return c
 	}
-	c.Status = GetClusterStatus(client)
+	c.Status = kube.Status(client)
 	if describeInstance != nil {
 		instanceList, err := describeInstance()
 		if err != nil {
@@ -1189,8 +1190,8 @@ func (p *ProviderBase) Describe(kubeCfg string, c *types.ClusterInfo, describeIn
 		c.Worker = strconv.Itoa(workerCount)
 		c.Nodes = instanceNodes
 		if c.Status == types.ClusterStatusRunning {
-			c.Version = GetClusterVersion(client)
-			nodes, err := DescribeClusterNodes(client, instanceNodes)
+			c.Version = kube.Version(client)
+			nodes, err := kube.DescribeNodes(client, instanceNodes)
 			if err != nil {
 				p.Logger.Errorf("[%s] failed to list nodes of cluster %s: %v", p.Provider, p.Name, err)
 				return c

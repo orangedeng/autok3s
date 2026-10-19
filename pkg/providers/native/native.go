@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/orangedeng/autok3s/pkg/cluster"
+	"github.com/orangedeng/autok3s/pkg/cluster/kube"
 	"github.com/orangedeng/autok3s/pkg/common"
 	"github.com/orangedeng/autok3s/pkg/providers"
 	putil "github.com/orangedeng/autok3s/pkg/providers/utils"
@@ -135,7 +136,7 @@ func (p *Native) rollbackInstance(ids []string) error {
 		}
 	}
 	kubeCfg := filepath.Join(common.CfgPath, common.KubeCfgFile)
-	client, err := cluster.GetClusterConfig(p.ContextName, kubeCfg)
+	client, err := kube.Client(p.ContextName, kubeCfg)
 	if err != nil {
 		p.Logger.Errorf("[%s] failed to get kubeclient for rollback: %v", p.GetProviderName(), err)
 	}
@@ -379,7 +380,7 @@ func (p *Native) syncInstanceNodes() ([]types.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	client, err := cluster.GetClusterConfig(p.ContextName, filepath.Join(common.CfgPath, common.KubeCfgFile))
+	client, err := kube.Client(p.ContextName, filepath.Join(common.CfgPath, common.KubeCfgFile))
 	if err != nil {
 		return nodes, nil
 	}
