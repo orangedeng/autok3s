@@ -3,13 +3,13 @@ package ssh
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/orangedeng/autok3s/pkg/common"
 	"github.com/orangedeng/autok3s/pkg/hosts"
 	"github.com/orangedeng/autok3s/pkg/hosts/dialer"
+	akws "github.com/orangedeng/autok3s/pkg/server/store/websocket"
 	autok3stypes "github.com/orangedeng/autok3s/pkg/types"
 
 	"github.com/gorilla/websocket"
@@ -24,6 +24,7 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize:   10240,
 	HandshakeTimeout:  60 * time.Second,
 	EnableCompression: true,
+	CheckOrigin:       akws.CheckSameOrigin,
 }
 
 // Handler ssh handler.
@@ -59,9 +60,6 @@ func handler(apiOp *types.APIRequest) error {
 	}
 	if provider == "" || id == "" || node == "" {
 		return apierror.NewAPIError(validation.InvalidOption, "provider, cluster, node can't be empty")
-	}
-	upgrader.CheckOrigin = func(_ *http.Request) bool {
-		return true
 	}
 	c, err := upgrader.Upgrade(apiOp.Response, apiOp.Request, nil)
 	if err != nil {
