@@ -174,6 +174,9 @@ func (p *ProviderBase) Describe(kubeCfg string, c *types.ClusterInfo, describeIn
 				return c
 			}
 			c.Nodes = nodes
+			// both views are already in hand, so converging the persisted
+			// state adds no provider or apiserver request.
+			p.reconcileClusterState(client, instanceList)
 		} else {
 			c.Version = types.ClusterStatusUnknown
 		}

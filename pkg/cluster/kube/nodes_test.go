@@ -86,3 +86,34 @@ func TestDescribeNodes(t *testing.T) {
 	assert.Equal(t, types.ClusterStatusUnknown, result[3].Status)
 	assert.Empty(t, result[3].Version)
 }
+
+func TestListNodeViews(t *testing.T) {
+	labelled := makeNode("worker-1",
+		map[string]string{
+			"autok3s.io/install-uuid": "uuid-1",
+			"autok3s.io/instance-id":  "i-1",
+		},
+		[]v1.NodeAddress{{Type: v1.NodeInternalIP, Address: "10.0.0.1"}}, v1.ConditionTrue, "v1.30.4+k3s1")
+	unlabelled := makeNode("ip-10-0-0-2", nil,
+		[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.1.1.2"}}, v1.ConditionTrue, "v1.30.4+k3s1")
+
+	views, err := ListNodeViews(fake.NewSimpleClientset(labelled, unlabelled))
+	require.NoError(t, err)
+	require.Len(t, views, 2)
+
+	// the fake clientset returns nodes sorted by name, so look each view
+	// up instead of relying on creation order.
+	byName := map[string]NodeView{}
+	for _, view := range views {
+		byName[view.Name] = view
+	}
+	assert.Equal(t, NodeView{
+		Name:       "worker-1",
+		Labels:     map[string]string{"autok3s.io/install-uuid": "uuid-1", "autok3s.io/instance-id": "i-1"},
+		InternalIP: "10.0.0.1",
+	}, byName["worker-1"])
+
+	// only the internal address is extracted; other address types are
+	// ignored for the view.
+	assert.Equal(t, NodeView{Name: "ip-10-0-0-2"}, byName["ip-10-0-0-2"])
+}
