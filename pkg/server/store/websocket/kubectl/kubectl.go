@@ -5,11 +5,11 @@ package kubectl
 
 import (
 	"fmt"
-	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/orangedeng/autok3s/pkg/common"
+	akws "github.com/orangedeng/autok3s/pkg/server/store/websocket"
 	wssh "github.com/orangedeng/autok3s/pkg/server/store/websocket/ssh"
 
 	"github.com/gorilla/websocket"
@@ -24,6 +24,7 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize:   10240,
 	HandshakeTimeout:  60 * time.Second,
 	EnableCompression: true,
+	CheckOrigin:       akws.CheckSameOrigin,
 }
 
 // Shell struct for shell.
@@ -61,9 +62,6 @@ func ptyHandler(apiOp *types.APIRequest) error {
 		}
 	}
 
-	upgrader.CheckOrigin = func(_ *http.Request) bool {
-		return true
-	}
 	c, err := upgrader.Upgrade(apiOp.Response, apiOp.Request, nil)
 	if err != nil {
 		return err
