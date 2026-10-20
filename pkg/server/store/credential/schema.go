@@ -103,7 +103,7 @@ func formsHandler(_ http.ResponseWriter, r *http.Request) {
 	}
 
 	if credential == "" {
-		apiContext.WriteError(apierror.NewFieldAPIError(validation.MissingRequired, "credentail", ""))
+		apiContext.WriteError(apierror.NewFieldAPIError(validation.MissingRequired, "credential", ""))
 		return
 	}
 	if project == "" {
