@@ -1237,15 +1237,16 @@ func getCCMVersion(k3sversion string) (string, error) {
 			return "", err
 		}
 		for version, targetVersion := range ccmVersionMap {
-			// assume the constrant is validated
+			// assume the constraint is validated
 			if cst, _ := semver.NewConstraint(version); cst.Check(versionSemver) {
 				return targetVersion, nil
 			}
 		}
 	}
 
-	// should never meet this condition because the version map covers all k8s version.
-	return ccmVersionMap[">= 1.27"], nil
+	// the version map covers all k8s versions, so this is only reached when
+	// the k3s version is unknown; fall back to the newest CCM.
+	return ccmVersionMap[">= 1.30"], nil
 }
 
 func getCCMExtraArgs(k3sversion string) ([]string, error) {
@@ -1257,7 +1258,7 @@ func getCCMExtraArgs(k3sversion string) ([]string, error) {
 		return nil, err
 	}
 	for version := range ccmExtraArgs {
-		// assume the constrant is validated
+		// assume the constraint is validated
 		if cst, _ := semver.NewConstraint(version); cst.Check(versionSemver) {
 			return ccmExtraArgs[version], nil
 		}

@@ -205,11 +205,20 @@ func TestGetCCMVersion(t *testing.T) {
 		},
 		{
 			k3sversion: "v1.27.8+k3s2",
-			ccmVersion: ccmVersionMap[">= 1.27"],
+			ccmVersion: ccmVersionMap["~1.27"],
 		},
 		{
 			k3sversion: "v1.28.4+k3s2",
-			ccmVersion: ccmVersionMap[">= 1.27"],
+			ccmVersion: ccmVersionMap["~1.28"],
+		},
+		{
+			k3sversion: "v1.31.5+k3s1",
+			ccmVersion: ccmVersionMap[">= 1.30"],
+		},
+		{
+			// an unknown k3s version falls back to the newest CCM.
+			k3sversion: "",
+			ccmVersion: ccmVersionMap[">= 1.30"],
 		},
 		{
 			k3sversion: "v1.20.15+k3s1",
