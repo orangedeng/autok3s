@@ -190,7 +190,7 @@ func (p *ProviderBase) initNode(isFirstMaster bool, fixedIP string, cluster *typ
 		return err
 	}
 
-	cmd := k3s.InstallCommand(isFirstMaster, fixedIP, cluster, node, []string{extraArgs})
+	cmd := k3s.InstallCommand(isFirstMaster, fixedIP, common.GetInstallUUID(), cluster, node, []string{extraArgs})
 	nodeRole := "master"
 	if !node.Master {
 		nodeRole = "worker"

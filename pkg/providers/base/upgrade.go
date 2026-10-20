@@ -138,7 +138,7 @@ func (p *ProviderBase) Upgrade(cluster *types.Cluster) error {
 			}
 			cmd = k3s.RestartCommand
 		} else {
-			cmd = k3s.InstallCommand(i == 0, publicIP, cluster, node, []string{extraArgs})
+			cmd = k3s.InstallCommand(i == 0, publicIP, common.GetInstallUUID(), cluster, node, []string{extraArgs})
 		}
 
 		p.Logger.Infof("[cluster] upgrading k3s master %d command: %s", i+1, cmd)
@@ -163,7 +163,7 @@ func (p *ProviderBase) Upgrade(cluster *types.Cluster) error {
 			}
 			cmd = k3s.AgentRestartCommand
 		} else {
-			cmd = k3s.InstallCommand(false, publicIP, cluster, node, []string{extraArgs})
+			cmd = k3s.InstallCommand(false, publicIP, common.GetInstallUUID(), cluster, node, []string{extraArgs})
 		}
 
 		p.Logger.Infof("[cluster] upgrading k3s worker %d command: %s", i+1, cmd)

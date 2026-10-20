@@ -75,11 +75,11 @@ func TestInstallCommand(t *testing.T) {
 	}
 	fixedIP := FirstAddress(testCluster.Status.MasterNodes[0].PublicIPAddress)
 	for i, node := range testCluster.MasterNodes {
-		rtn := InstallCommand(i == 0, fixedIP, testCluster, node, []string{})
+		rtn := InstallCommand(i == 0, fixedIP, "", testCluster, node, []string{})
 		assert.Equal(t, masterCommands[i], rtn)
 	}
 	for i, node := range testCluster.WorkerNodes {
-		rtn := InstallCommand(false, fixedIP, testCluster, node, []string{})
+		rtn := InstallCommand(false, fixedIP, "", testCluster, node, []string{})
 		assert.Equal(t, workerCommands[i], rtn)
 	}
 
@@ -94,7 +94,7 @@ func TestInstallCommand(t *testing.T) {
 		"--tls-san=1.2.3.1 --tls-san=1.2.3.2 --tls-san=1.2.3.3 --tls-san=2.3.4.5' " +
 		"INSTALL_K3S_VERSION='v1.24.3+k3s1' K3S_TOKEN='dd73df9b22f8ff22be0d17ec36e7267a' sh -"
 
-	assert.Equal(t, expectFirstMasterCommand, InstallCommand(true, fixedIP, testCluster, testCluster.MasterNodes[0], []string{}))
+	assert.Equal(t, expectFirstMasterCommand, InstallCommand(true, fixedIP, "", testCluster, testCluster.MasterNodes[0], []string{}))
 }
 
 func TestInstallCommandAirgap(t *testing.T) {
@@ -103,7 +103,7 @@ func TestInstallCommandAirgap(t *testing.T) {
 
 	expect := "INSTALL_K3S_EXEC='--node-external-ip=1.2.3.5' INSTALL_K3S_SKIP_DOWNLOAD='true' " +
 		"K3S_TOKEN='dd73df9b22f8ff22be0d17ec36e7267a' K3S_URL='https://1.2.3.1:6443' install.sh"
-	assert.Equal(t, expect, InstallCommand(false, "1.2.3.1", testCluster, testCluster.WorkerNodes[0], []string{}))
+	assert.Equal(t, expect, InstallCommand(false, "1.2.3.1", "", testCluster, testCluster.WorkerNodes[0], []string{}))
 }
 
 func TestInstallCommandMirrorAndChannel(t *testing.T) {
@@ -114,7 +114,7 @@ func TestInstallCommandMirrorAndChannel(t *testing.T) {
 
 	expect := "curl -sLS https://get.k3s.io | INSTALL_K3S_CHANNEL='stable' INSTALL_K3S_EXEC='--node-external-ip=1.2.3.5' " +
 		"INSTALL_K3S_MIRROR='cn' K3S_TOKEN='dd73df9b22f8ff22be0d17ec36e7267a' K3S_URL='https://1.2.3.1:6443' sh -"
-	assert.Equal(t, expect, InstallCommand(false, "1.2.3.1", testCluster, testCluster.WorkerNodes[0], []string{}))
+	assert.Equal(t, expect, InstallCommand(false, "1.2.3.1", "", testCluster, testCluster.WorkerNodes[0], []string{}))
 }
 
 func TestInstallCommandInstallEnv(t *testing.T) {
@@ -128,7 +128,7 @@ func TestInstallCommandInstallEnv(t *testing.T) {
 		"INSTALL_K3S_EXEC='server --advertise-address=1.2.3.1 --cluster-init --node-external-ip=1.2.3.1 " +
 		"--tls-san=1.2.3.1 --tls-san=1.2.3.2 --tls-san=1.2.3.3 --tls-san=2.3.4.5 --node-label env=test' " +
 		"INSTALL_K3S_VERSION='v1.24.3+k3s1' K3S_TOKEN='dd73df9b22f8ff22be0d17ec36e7267a' sh -"
-	assert.Equal(t, expect, InstallCommand(true, "1.2.3.1", testCluster, testCluster.MasterNodes[0], []string{}))
+	assert.Equal(t, expect, InstallCommand(true, "1.2.3.1", "", testCluster, testCluster.MasterNodes[0], []string{}))
 }
 
 func TestInstallCommandDataStoreCertificates(t *testing.T) {
@@ -145,7 +145,7 @@ func TestInstallCommandDataStoreCertificates(t *testing.T) {
 		"--system-default-registry=reg.example.com " +
 		"--tls-san=1.2.3.1 --tls-san=1.2.3.2 --tls-san=1.2.3.3 --tls-san=2.3.4.5' " +
 		"INSTALL_K3S_VERSION='v1.24.3+k3s1' K3S_TOKEN='dd73df9b22f8ff22be0d17ec36e7267a' sh -"
-	assert.Equal(t, expect, InstallCommand(true, "1.2.3.1", testCluster, testCluster.MasterNodes[0], []string{}))
+	assert.Equal(t, expect, InstallCommand(true, "1.2.3.1", "", testCluster, testCluster.MasterNodes[0], []string{}))
 }
 
 func TestInstallCommandWorkerWithoutExternalIP(t *testing.T) {
@@ -154,7 +154,47 @@ func TestInstallCommandWorkerWithoutExternalIP(t *testing.T) {
 
 	expect := "curl -sLS https://get.k3s.io | INSTALL_K3S_EXEC='' " +
 		"INSTALL_K3S_VERSION='v1.24.3+k3s1' K3S_TOKEN='dd73df9b22f8ff22be0d17ec36e7267a' K3S_URL='https://1.2.3.1:6443' sh -"
-	assert.Equal(t, expect, InstallCommand(false, "1.2.3.1", testCluster, node, []string{}))
+	assert.Equal(t, expect, InstallCommand(false, "1.2.3.1", "", testCluster, node, []string{}))
+}
+
+func TestNodeLabelArgs(t *testing.T) {
+	cluster := &types.Cluster{Metadata: types.Metadata{ContextName: "autok3s-test"}}
+	node := types.Node{InstanceID: "i-0abc123"}
+
+	// all three identity labels are emitted in label key order.
+	assert.Equal(t, []string{
+		"--node-label=autok3s.io/cluster-id=autok3s-test",
+		"--node-label=autok3s.io/install-uuid=uuid-1",
+		"--node-label=autok3s.io/instance-id=i-0abc123",
+	}, NodeLabelArgs("uuid-1", cluster, node))
+
+	// an empty install uuid only skips that one label.
+	assert.Equal(t, []string{
+		"--node-label=autok3s.io/cluster-id=autok3s-test",
+		"--node-label=autok3s.io/instance-id=i-0abc123",
+	}, NodeLabelArgs("", cluster, node))
+
+	// nodes without an instance id or cluster context carry no labels at
+	// all, which keeps the legacy fixtures of the command tests valid.
+	assert.Empty(t, NodeLabelArgs("", &types.Cluster{}, types.Node{}))
+}
+
+func TestInstallCommandIdentityLabels(t *testing.T) {
+	testCluster := newTestCluster()
+	testCluster.ContextName = "autok3s-test"
+	worker := types.Node{
+		PublicIPAddress:   []string{"1.2.3.5"},
+		InternalIPAddress: []string{"1.2.3.5"},
+		InstanceID:        "i-0abc123",
+	}
+	testCluster.WorkerNodes = []types.Node{worker}
+
+	expect := "curl -sLS https://get.k3s.io | INSTALL_K3S_EXEC='--node-external-ip=1.2.3.5 " +
+		"--node-label=autok3s.io/cluster-id=autok3s-test " +
+		"--node-label=autok3s.io/install-uuid=uuid-1 " +
+		"--node-label=autok3s.io/instance-id=i-0abc123' " +
+		"INSTALL_K3S_VERSION='v1.24.3+k3s1' K3S_TOKEN='dd73df9b22f8ff22be0d17ec36e7267a' K3S_URL='https://1.2.3.1:6443' sh -"
+	assert.Equal(t, expect, InstallCommand(false, "1.2.3.1", "uuid-1", testCluster, worker, []string{}))
 }
 
 func TestTLSSans(t *testing.T) {

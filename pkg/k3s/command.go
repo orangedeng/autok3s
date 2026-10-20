@@ -18,6 +18,13 @@ const (
 	// DataStoreCertificatesPath is the remote directory the datastore
 	// certificates are written to before K3s starts.
 	DataStoreCertificatesPath = "/etc/rancher/datastore"
+
+	// Identity labels stamped on every node autok3s installs. They tie a
+	// Node object back to the installation, the cluster and the provider
+	// instance recorded in the persisted cluster state.
+	InstallUUIDLabel = "autok3s.io/install-uuid"
+	ClusterIDLabel   = "autok3s.io/cluster-id"
+	InstanceIDLabel  = "autok3s.io/instance-id"
 )
 
 var (
@@ -39,7 +46,9 @@ var (
 
 // InstallCommand renders the shell command that installs K3s on one node.
 // The first master initializes the cluster; every other node joins it.
-func InstallCommand(isFirstMaster bool, fixedIP string, cluster *types.Cluster, node types.Node, extraArgs []string) string {
+// The installUUID stamps the identity labels of the installing autok3s
+// instance; an empty value skips the labels entirely.
+func InstallCommand(isFirstMaster bool, fixedIP string, installUUID string, cluster *types.Cluster, node types.Node, extraArgs []string) string {
 	var commandPrefix, commandSuffix string
 	envVar := map[string]string{}
 	// prepare for install env
@@ -79,6 +88,7 @@ func InstallCommand(isFirstMaster bool, fixedIP string, cluster *types.Cluster, 
 	}
 
 	runArgs := getRunArgs(isFirstMaster, fixedIP, cluster, node)
+	runArgs = append(runArgs, NodeLabelArgs(installUUID, cluster, node)...)
 	runArgs = append(runArgs, extraArgs...)
 	envVar["INSTALL_K3S_EXEC"] = strings.Join(runArgs, " ")
 
@@ -88,6 +98,30 @@ func InstallCommand(isFirstMaster bool, fixedIP string, cluster *types.Cluster, 
 	}
 	sort.Strings(sortedEnvVars)
 	return strings.TrimSpace(fmt.Sprintf("%s %s %s", commandPrefix, strings.Join(sortedEnvVars, " "), commandSuffix))
+}
+
+// NodeLabelArgs returns the identity label arguments for one node, in a
+// stable order. Labels with an empty value are skipped, so a cluster
+// without an install uuid still carries the cluster and instance ids.
+func NodeLabelArgs(installUUID string, cluster *types.Cluster, node types.Node) []string {
+	labels := map[string]string{
+		InstallUUIDLabel: installUUID,
+		ClusterIDLabel:   cluster.ContextName,
+		InstanceIDLabel:  node.InstanceID,
+	}
+	keys := make([]string, 0, len(labels))
+	for key := range labels {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	args := make([]string, 0, len(keys))
+	for _, key := range keys {
+		if labels[key] == "" {
+			continue
+		}
+		args = append(args, "--node-label="+key+"="+labels[key])
+	}
+	return args
 }
 
 // TLSSans returns the sorted, deduplicated list of TLS SANs of the cluster:
