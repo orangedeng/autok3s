@@ -56,6 +56,7 @@ jobs:
       - name: Build to test
         env:
           AUTOK3S_SKIP_UI: "true"
+          AUTOK3S_INSTALL_SCRIPT_SOURCE_REPO: https://get.k3s.io
         run: |
           # placeholder to satisfy go:embed; the real ui is built by the UI job
           mkdir -p pkg/server/ui/static
