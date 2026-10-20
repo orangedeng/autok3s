@@ -132,11 +132,6 @@ func (p *ProviderBase) InitCluster(options interface{}, deployCCM func() []strin
 	}
 
 	cmds := []string{}
-	//if deployCCM != nil {
-	//	// install additional manifests to the current cluster.
-	//	extraManifests := deployCCM()
-	//	cmds = append(cmds, extraManifests...)
-	//}
 
 	if p.Manifests != "" {
 		deployCmd, err := p.GetCustomManifests()
