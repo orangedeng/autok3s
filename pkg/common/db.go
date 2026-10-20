@@ -150,7 +150,17 @@ func InitStorage(ctx context.Context) error {
 		}
 	}
 
-	return settings.SetProvider(&DBSettingProvider{})
+	if err := settings.SetProvider(&DBSettingProvider{}); err != nil {
+		return err
+	}
+
+	// the install uuid backs the node identity labels; a failure only
+	// degrades reconciliation to address matching, so it is not fatal.
+	if err := SetupInstallUUID(); err != nil {
+		logrus.Warnf("failed to assign install uuid: %v", err)
+	}
+
+	return nil
 }
 
 // GetDB open and returns database.
