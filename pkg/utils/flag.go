@@ -36,6 +36,8 @@ func ConvertFlags(cmd *cobra.Command, fs []types.Flag) *pflag.FlagSet {
 					pf.Var(newStringMapValue(t, f.P.(*types.StringMap)), f.Name, f.Usage)
 				case int:
 					pf.IntVar(f.P.(*int), f.Name, t, f.Usage)
+				case float64:
+					pf.Float64Var(f.P.(*float64), f.Name, t, f.Usage)
 				default:
 					continue
 				}
@@ -59,6 +61,10 @@ func ConvertFlags(cmd *cobra.Command, fs []types.Flag) *pflag.FlagSet {
 					pf.VarP(newStringArrayValue(t, f.P.(*types.StringArray)), f.Name, f.ShortHand, f.Usage)
 				case types.StringMap:
 					pf.Var(newStringMapValue(t, f.P.(*types.StringMap)), f.Name, f.Usage)
+				case int:
+					pf.IntVarP(f.P.(*int), f.Name, f.ShortHand, t, f.Usage)
+				case float64:
+					pf.Float64VarP(f.P.(*float64), f.Name, f.ShortHand, t, f.Usage)
 				default:
 					continue
 				}
